@@ -250,12 +250,25 @@ def select_products(entry: VisitEntry, count: int = 2) -> list[str]:
     return entry.matched_products[:count]
 
 
+import random
+
 def get_product_info(product_code: str) -> dict:
     """
     Look up product details from product_catalog.yaml.
-    Returns dict with brand_name, generic_name, description.
+    Returns dict with brand_name, generic_name, descriptions (list).
     """
     return PRODUCT_CATALOG.get(product_code, {})
+
+
+def get_random_description(product_code: str) -> str:
+    """
+    Randomly select one description from the product's list.
+    """
+    info = get_product_info(product_code)
+    descs = info.get("descriptions", [])
+    if not descs:
+        return ""
+    return random.choice(descs)
 
 
 # ---------------------------------------------------------------------------

@@ -1,32 +1,53 @@
 # 產品目錄 — Product Catalog
-# 產品代碼, 商品名, 學名, 描述 (待提供)
+# 包含品牌名、學名，以及多條可用於隨機帶入的描述 (descriptions)
 products:
   uri:
     brand_name: Urief
     generic_name: Silodosin
-    description: ""  # 待提供
+    descriptions:
+      - 作用速度快，給藥後 2~6 小時即可見到最大尿流速明顯改善，且藥效穩定持久。
+      - 高度前列腺選擇性，產生姿態性低血壓比例僅 1.3% (與安慰劑類似)，併用降血壓藥亦安全無虞。
+      - 臨床研究證實優於 Tamsulosin，能有效改善 BPH 伴隨的夜尿、頻尿及排尿不乾淨等症狀。
+      - 2019 SPLASH 研究顯示，針對使用他型藥物效果不佳者，轉換成 Urief 可達 100% 症狀改善。
+      - 代謝物 KMD-3213G 半衰期長達 18 小時，日本專利活性物質可持續穩定提供 24 小時療效。
 
   eli:
     brand_name: Eligard
     generic_name: Leuprolide Acetate
-    description: ""  # 待提供
+    descriptions:
+      - 採創新的 ATRIGEL 釋放技術，注射體積小且針頭短，大幅降低患者的疼痛不適。
+      - 具備 2 倍於傳統劑型的效力，能穩定抑制睪固酮 T < 20 ng/dL，效果媲美手術去勢。
+      - 臨床證據顯示能延緩進入 CRPC 達 10 年以上，提供長期穩定的攝護腺癌控制。
 
   oxb:
     brand_name: Oxbu
-    generic_name: Oxbutynin
-    description: ""  # 待提供
-
-  ysl:
-    brand_name: ""  # 待提供
-    generic_name: ""
-    description: ""
+    generic_name: Oxbutynin ER
+    descriptions:
+      - Matrix (基質性系統) 緩釋劑型大幅降低口乾、便祕副作用；且可撥半服用、不影響緩釋效果。
+      - 具四重作用機轉（抗膽鹼、解痙、抑制 ATP、局部麻醉），能充分放鬆逼尿肌，達到全方位 OAB 症狀控制。
+      - Kares 研究證實只有 19.9% 有副作用且多為輕微，緩釋劑型讓耐受性極佳，僅 4% 患者因中斷療程。
+      - 最新研究指出可改善人類膀胱上皮細胞發炎反應，能有效緩解 UTI (尿路感染) 所伴隨的 OAB 症狀。
 
   esv:
-    brand_name: ""  # 待提供
-    generic_name: ""
-    description: ""
+    brand_name: ESVATIN
+    generic_name: Estriol (E3)
+    descriptions:
+      - 為全新陰道錠劑，劑量精準且容易使用，維持隱私與乾淨，無傳統藥膏滲漏問題。
+      - E3 強度僅為 E2 的 1/80 且不轉換，安全性高，不增加乳癌或子宮內膜增生風險。
+      - 對下泌尿道組織親和力高，有效改善萎縮性陰道炎與更年期生殖泌尿症候群(GSM)。
+
+  ysl:
+    brand_name: Yselty
+    generic_name: Linzagolix
+    descriptions:
+      - 每日一次口服，可依患者狀況調整劑量，提供個人化的子宮肌瘤治療方案。
+      - 臨床試驗顯示能有效減輕經血量，改善貧血狀況，並提升患者的生活品質。
+      - 具備良好的耐受性，副作用輕微且多數可自行緩解，適合長期治療需求。
 
   lmn:
-    brand_name: ""  # 待提供
-    generic_name: ""
-    description: ""
+    brand_name: Lomexin
+    generic_name: Fenticonazole Nitrate
+    descriptions:
+      - 為廣效性抗黴菌藥物，治療率高達 95% 以上。
+      - 陰道軟膠囊隨體溫快速溶解，覆蓋範圍廣且復發率低，能讓症狀迅速解除，患者順從性佳。
+      - 具備對革蘭氏陽性菌的抗菌活性及對陰道毛滴蟲的抗寄生蟲作用，能全方位處理陰道感染。

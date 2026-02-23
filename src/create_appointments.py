@@ -1,9 +1,9 @@
 """
-CRM 約會記錄自動化 — Phase 1
-完整流程: 登入 → 新增日報 → 填時間 → 儲存 → 批次建立約會記錄
+CRM 約會記錄自動化 — Phase 2
+完整流程: 解析待訪名單 → 登入 → 新增日報 → 填時間 → 儲存 → 批次建立約會記錄
 
 約會記錄操作:
-  1. 拜訪對象: Enter×2 (使用模板)
+  1. 拜訪對象: 從待訪名單解析客戶姓名，自動填入
   2. 實際拜訪時段: 上午/下午
   3. 完成事項: 勾選「產品說明」
   4. 儲存
@@ -13,9 +13,17 @@ import os
 import logging
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
+from visit_list_parser import parse_visit_list, select_products, VisitEntry
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# === 待訪名單 (可從檔案讀取或直接貼上) ===
+VISIT_LIST = """
+慈濟/URO/吳書雨/B
+耕莘/URO/姜秉均/A
+慈濟/OBS/祝春紅/B
+""".strip()
 
 # === 設定 ===
 MORNING_VISITS = 5   # 上午拜訪人數
@@ -100,15 +108,17 @@ async def find_add_activity_button(page):
     return None
 
 
-async def fill_appointment(popup_page, period: str):
+async def fill_appointment(popup_page, period: str, entry: VisitEntry = None):
     """
     在約會記錄 popup 視窗中填寫表單
 
     Args:
         popup_page: Playwright popup page 物件
         period: "上午" 或 "下午"
+        entry: VisitEntry 物件 (含客戶姓名、科別、產品)
     """
-    logger.info(f"填寫約會記錄 (時段: {period})...")
+    customer_name = entry.customer_name if entry else ""
+    logger.info(f"填寫約會記錄 (時段: {period}, 拜訪對象: {customer_name})...")
 
     # 等待 popup 完全載入
     await popup_page.wait_for_load_state("networkidle", timeout=30000)
@@ -125,8 +135,8 @@ async def fill_appointment(popup_page, period: str):
     # 等待表單渲染完成
     await popup_page.wait_for_timeout(3000)
 
-    # === 1. 拜訪對象 (new_abc): Enter×2 帶入模板 ===
-    logger.info("  填寫拜訪對象...")
+    # === 1. 拜訪對象 (new_abc): 輸入客戶姓名 ===
+    logger.info(f"  填寫拜訪對象: {customer_name}...")
     try:
         # 點擊拜訪對象欄位區域
         abc_field = await popup_frame.wait_for_selector(
@@ -135,12 +145,21 @@ async def fill_appointment(popup_page, period: str):
         await abc_field.click()
         await popup_page.wait_for_timeout(1000)
 
-        # Enter 兩次帶入模板
-        await popup_page.keyboard.press("Enter")
-        await popup_page.wait_for_timeout(500)
-        await popup_page.keyboard.press("Enter")
-        await popup_page.wait_for_timeout(1500)
-        logger.info("  ✅ 拜訪對象已帶入")
+        if customer_name:
+            # 輸入客戶姓名 → 從待訪名單自動帶入
+            await popup_page.keyboard.type(customer_name)
+            await popup_page.wait_for_timeout(1000)
+            # 按 Enter 確認選取 lookup 結果
+            await popup_page.keyboard.press("Enter")
+            await popup_page.wait_for_timeout(1500)
+            logger.info(f"  ✅ 拜訪對象已填入: {customer_name}")
+        else:
+            # Fallback: Enter×2 帶入模板 (舊行為)
+            await popup_page.keyboard.press("Enter")
+            await popup_page.wait_for_timeout(500)
+            await popup_page.keyboard.press("Enter")
+            await popup_page.wait_for_timeout(1500)
+            logger.info("  ✅ 拜訪對象已帶入 (模板)")
     except Exception as e:
         logger.warning(f"  ⚠️ 拜訪對象填寫異常: {e}")
 
@@ -244,18 +263,20 @@ async def fill_appointment(popup_page, period: str):
         await popup_page.wait_for_timeout(3000)
 
 
-async def create_single_appointment(page, context, period: str, index: int):
+async def create_single_appointment(page, context, period: str, index: int, entry: VisitEntry = None):
     """
     建立單筆約會記錄
 
     Args:
         page: 主頁面 (日報頁面)
-        context: browser context (用來監聽 popup)
+        context: browser context (用來監聯 popup)
         period: "上午" 或 "下午"
         index: 第幾筆 (1-based)
+        entry: VisitEntry 物件 (含客戶姓名、科別、產品)
     """
+    customer_label = f" — {entry.customer_name}" if entry else ""
     logger.info(f"{'='*50}")
-    logger.info(f"建立第 {index} 筆約會記錄 ({period})")
+    logger.info(f"建立第 {index} 筆約會記錄 ({period}{customer_label})")
     logger.info(f"{'='*50}")
 
     # 尋找「+ 新增約會紀錄」按鈕
@@ -271,7 +292,7 @@ async def create_single_appointment(page, context, period: str, index: int):
     logger.info(f"✅ Popup 開啟: {popup_page.url}")
 
     # 填寫約會表單
-    await fill_appointment(popup_page, period)
+    await fill_appointment(popup_page, period, entry=entry)
 
     # 等待 popup 關閉，回到主頁面
     try:
@@ -299,8 +320,19 @@ async def main():
     password = os.getenv("CRM_PASSWORD")
     base_url = os.getenv("CRM_BASE_URL", "https://crm.synmosa.com.tw/")
 
-    total = MORNING_VISITS + AFTERNOON_VISITS
-    logger.info(f"準備建立 {total} 筆約會記錄 (上午 {MORNING_VISITS} + 下午 {AFTERNOON_VISITS})")
+    # Step 0: 解析待訪名單
+    visit_list_text = os.getenv("VISIT_LIST", VISIT_LIST)
+    entries = parse_visit_list(visit_list_text)
+
+    if entries:
+        total = len(entries)
+        logger.info(f"已解析 {total} 筆待訪名單")
+        for e in entries:
+            products = select_products(e)
+            logger.info(f"  → {e.customer_name} | {e.department_code}({e.department_name_zh}) | 產品: {products}")
+    else:
+        total = MORNING_VISITS + AFTERNOON_VISITS
+        logger.info(f"未提供待訪名單，使用預設數量: {total} 筆")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False)
@@ -317,17 +349,21 @@ async def main():
             await create_daily_report(page, base_url)
 
             # Step 3: 批次建立約會記錄
-            index = 1
-
-            # 上午場
-            for i in range(MORNING_VISITS):
-                await create_single_appointment(page, context, "上午", index)
-                index += 1
-
-            # 下午場
-            for i in range(AFTERNOON_VISITS):
-                await create_single_appointment(page, context, "下午", index)
-                index += 1
+            if entries:
+                # 依待訪名單建立 (前半上午、後半下午)
+                midpoint = (len(entries) + 1) // 2
+                for idx, entry in enumerate(entries, start=1):
+                    period = "上午" if idx <= midpoint else "下午"
+                    await create_single_appointment(page, context, period, idx, entry=entry)
+            else:
+                # Fallback: 舊行為 (無名單時)
+                index = 1
+                for i in range(MORNING_VISITS):
+                    await create_single_appointment(page, context, "上午", index)
+                    index += 1
+                for i in range(AFTERNOON_VISITS):
+                    await create_single_appointment(page, context, "下午", index)
+                    index += 1
 
             logger.info("=" * 60)
             logger.info(f"🎉 全部完成！共建立 {total} 筆約會記錄")

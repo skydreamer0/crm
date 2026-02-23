@@ -10,6 +10,13 @@
 - [ ] CRM 系統登入自動化同步 (包含處理驗證碼/雙重驗證)
 - [ ] 報表填寫頁面解析 (Selectors mapping)
 - [ ] 基礎自動填表邏輯與錯誤重試機制
+ 
+## 第二．五階段：待訪名單解析與產品匹配
+- [x] 待訪名單解析器 (visit_list_parser.py)
+- [x] 科別對應表 (department_mapping.yaml)
+- [x] 產品目錄 (product_catalog.yaml)
+- [x] 整合至約會記錄自動化流程
+- [ ] 產品描述規則與自動帶入
 
 ## 第三階段：資料對接與驗證
 - [ ] 支援從 Excel/CSV 讀取待填寫資料
