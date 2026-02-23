@@ -1,0 +1,32 @@
+# 產品目錄 — Product Catalog
+# 產品代碼, 商品名, 學名, 描述 (待提供)
+products:
+  uri:
+    brand_name: Urief
+    generic_name: Silodosin
+    description: ""  # 待提供
+
+  eli:
+    brand_name: Eligard
+    generic_name: Leuprolide Acetate
+    description: ""  # 待提供
+
+  oxb:
+    brand_name: Oxbu
+    generic_name: Oxbutynin
+    description: ""  # 待提供
+
+  ysl:
+    brand_name: ""  # 待提供
+    generic_name: ""
+    description: ""
+
+  esv:
+    brand_name: ""  # 待提供
+    generic_name: ""
+    description: ""
+
+  lmn:
+    brand_name: ""  # 待提供
+    generic_name: ""
+    description: ""
