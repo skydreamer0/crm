@@ -1,0 +1,55 @@
+{
+  "product": [
+    "frame_0",
+    "frame_1"
+  ],
+  "keyproduct": [
+    "frame_0",
+    "frame_1"
+  ],
+  "new_product": [
+    "frame_0",
+    "frame_1"
+  ],
+  "產品": [
+    "frame_0",
+    "frame_1",
+    "frame_2"
+  ],
+  "new_visititem": [
+    "frame_1",
+    "frame_2"
+  ],
+  "new_vst_text": [
+    "frame_1"
+  ],
+  "拜訪描述": [
+    "frame_1"
+  ],
+  "new_visiteffect": [
+    "frame_1"
+  ],
+  "拜訪效果": [
+    "frame_1"
+  ],
+  "new_visitpurpose": [
+    "frame_1"
+  ],
+  "拜訪目的": [
+    "frame_1"
+  ],
+  "new_footnote": [
+    "frame_1"
+  ],
+  "備註": [
+    "frame_0",
+    "frame_1"
+  ],
+  "new_desc": [
+    "frame_1"
+  ],
+  "重點產品": [
+    "frame_0",
+    "frame_1"
+  ]
+}

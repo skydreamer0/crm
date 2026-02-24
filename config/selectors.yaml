@@ -1,0 +1,52 @@
+# CRM 選擇器對照表 — Selectors Configuration
+# 統一管理所有 CRM 頁面的 DOM 選擇器
+# 如果 CRM 改版，只需修改此檔案而非搜尋整個 Python 程式碼
+
+crm:
+  # === 通用元素 ===
+  common:
+    content_iframe: "iframe#contentIFrame0"
+    save_button: "img.ms-crm-ImageStrip-Save_16, li[id*='SavePrimary']"
+    save_and_close_button: "img.ms-crm-ImageStrip-SaveAndClose_16, li[id*='SaveAndClosePrimary']"
+
+  # === 日報相關 ===
+  daily_report:
+    date_input: "input#DateInput"
+
+  # === 約會記錄 Popup ===
+  appointment:
+    # 新增約會按鈕 (在日報主頁 subgrid 區塊內)
+    add_button_primary: "img#details_addImageButtonImage"
+    add_button_fallback_title: 'img[title*="新增 約會 記錄"]'
+    add_button_fallback_class: "img.ms-crm-add-button-icon"
+
+    # 拜訪對象
+    customer_input: "div#new_abc"
+
+    # 實際拜訪時段
+    period_div: "div#new_actualvisitperiod"
+    period_select: "select#new_actualvisitperiod_i"
+    period_options: "select#new_actualvisitperiod_i option"
+
+    # 拜訪描述
+    visit_description: "div#new_vst_text"
+
+    # 完成事項 checkbox
+    checkbox_iframe: "iframe#WebResource_checkbox"
+    checkbox_product_intro: "input#id100000002"
+    checkbox_product_intro_fallback: "input[value='100000002']"
+
+  # === 產品介紹明細 Popup ===
+  product:
+    # 新增產品按鈕 (在約會 Popup 內)
+    add_product_button: "img#core_addImageButtonImage"
+
+    # 產品搜尋欄位
+    product_input: "div#new_product"
+    product_dropdown_menu: "ul#new_product_i_IMenu"
+
+    # 拜訪內容
+    visit_item: "div#new_visititem, div#new_visititem_c"
+
+    # 拜訪目的
+    visit_purpose: "div#new_visitpurpose"

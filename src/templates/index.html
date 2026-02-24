@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM 操作介面 — 待訪名單解析</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
         /* ─── Reset & Variables ────────────────────────────────────── */
-        *, *::before, *::after {
-            margin: 0; padding: 0; box-sizing: border-box;
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         :root {
@@ -34,9 +41,9 @@
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
-            --shadow-md: 0 4px 24px rgba(0,0,0,0.3);
-            --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
             --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -56,10 +63,11 @@
             left: -30%;
             width: 80vw;
             height: 80vw;
-            background: radial-gradient(circle, rgba(108,99,255,0.06) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(108, 99, 255, 0.06) 0%, transparent 70%);
             pointer-events: none;
             z-index: 0;
         }
+
         body::after {
             content: '';
             position: fixed;
@@ -67,7 +75,7 @@
             right: -20%;
             width: 60vw;
             height: 60vw;
-            background: radial-gradient(circle, rgba(52,211,153,0.04) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(52, 211, 153, 0.04) 0%, transparent 70%);
             pointer-events: none;
             z-index: 0;
         }
@@ -86,12 +94,14 @@
             text-align: center;
             margin-bottom: 40px;
         }
+
         .header__logo {
             display: inline-flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 8px;
         }
+
         .header__icon {
             width: 40px;
             height: 40px;
@@ -103,6 +113,7 @@
             font-size: 20px;
             box-shadow: 0 0 20px var(--accent-glow);
         }
+
         .header__title {
             font-size: 24px;
             font-weight: 700;
@@ -111,6 +122,7 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+
         .header__subtitle {
             font-size: 14px;
             color: var(--text-secondary);
@@ -127,6 +139,7 @@
             box-shadow: var(--shadow-sm);
             transition: var(--transition);
         }
+
         .input-section:focus-within {
             border-color: var(--border-focus);
             box-shadow: var(--shadow-md), 0 0 0 3px var(--accent-soft);
@@ -143,6 +156,7 @@
             letter-spacing: 1.2px;
             margin-bottom: 14px;
         }
+
         .section-label__dot {
             width: 6px;
             height: 6px;
@@ -170,9 +184,11 @@
             transition: var(--transition);
             outline: none;
         }
+
         textarea::placeholder {
             color: var(--text-muted);
         }
+
         textarea:focus {
             border-color: var(--accent);
             box-shadow: inset 0 0 0 1px var(--accent-soft);
@@ -183,8 +199,9 @@
             font-size: 12px;
             color: var(--text-muted);
         }
+
         .example-hint code {
-            background: rgba(108,99,255,0.1);
+            background: rgba(108, 99, 255, 0.1);
             color: var(--accent);
             padding: 2px 6px;
             border-radius: 4px;
@@ -212,17 +229,22 @@
             transition: var(--transition);
             outline: none;
         }
-        .btn:active { transform: scale(0.97); }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
 
         .btn--primary {
             background: var(--gradient-1);
             color: #fff;
             box-shadow: 0 4px 16px var(--accent-glow);
         }
+
         .btn--primary:hover {
             box-shadow: 0 6px 24px var(--accent-glow);
             filter: brightness(1.1);
         }
+
         .btn--primary:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -234,6 +256,7 @@
             color: var(--text-secondary);
             border: 1px solid var(--border);
         }
+
         .btn--secondary:hover {
             background: var(--bg-card-hover);
             color: var(--text-primary);
@@ -243,12 +266,14 @@
         .btn--execute {
             background: var(--gradient-2);
             color: #064e3b;
-            box-shadow: 0 4px 16px rgba(52,211,153,0.25);
+            box-shadow: 0 4px 16px rgba(52, 211, 153, 0.25);
         }
+
         .btn--execute:hover {
-            box-shadow: 0 6px 24px rgba(52,211,153,0.35);
+            box-shadow: 0 6px 24px rgba(52, 211, 153, 0.35);
             filter: brightness(1.05);
         }
+
         .btn--execute:disabled {
             opacity: 0.4;
             cursor: not-allowed;
@@ -268,20 +293,30 @@
             font-size: 13px;
             animation: fadeSlideIn 0.3s ease;
         }
-        .status-bar.visible { display: flex; }
+
+        .status-bar.visible {
+            display: flex;
+        }
+
         .status-bar.success {
-            border-color: rgba(52,211,153,0.3);
+            border-color: rgba(52, 211, 153, 0.3);
             background: var(--success-soft);
         }
+
         .status-bar.error {
-            border-color: rgba(248,113,113,0.3);
-            background: rgba(248,113,113,0.08);
+            border-color: rgba(248, 113, 113, 0.3);
+            background: rgba(248, 113, 113, 0.08);
         }
+
         .status-bar.loading {
-            border-color: rgba(108,99,255,0.3);
+            border-color: rgba(108, 99, 255, 0.3);
             background: var(--accent-soft);
         }
-        .status-bar__text { flex: 1; }
+
+        .status-bar__text {
+            flex: 1;
+        }
+
         .status-bar__count {
             font-weight: 700;
             font-variant-numeric: tabular-nums;
@@ -296,13 +331,78 @@
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ─── Results ─────────────────────────────────────────────── */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ─── Results & Execution ─────────────────────────────────── */
+        .execution-section,
         .results-section {
             display: none;
+            margin-bottom: 28px;
         }
-        .results-section.visible { display: block; }
+
+        .execution-section.visible,
+        .results-section.visible {
+            display: block;
+        }
+
+        .execution-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            animation: fadeSlideIn 0.35s ease backwards;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 12px;
+            background: var(--bg-input);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--gradient-1);
+            transition: width 0.4s ease;
+        }
+
+        .execution-log {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .execution-log div {
+            margin-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            padding-bottom: 6px;
+        }
 
         .results-header {
             display: flex;
@@ -320,6 +420,7 @@
             transition: var(--transition);
             animation: fadeSlideIn 0.35s ease backwards;
         }
+
         .result-card:hover {
             border-color: var(--accent);
             box-shadow: var(--shadow-md), 0 0 0 2px var(--accent-soft);
@@ -332,6 +433,7 @@
             gap: 14px;
             margin-bottom: 16px;
         }
+
         .result-card__index {
             width: 32px;
             height: 32px;
@@ -345,10 +447,12 @@
             color: #fff;
             flex-shrink: 0;
         }
+
         .result-card__name {
             font-size: 18px;
             font-weight: 700;
         }
+
         .result-card__dept {
             font-size: 12px;
             font-weight: 500;
@@ -358,6 +462,7 @@
             border-radius: 20px;
             margin-left: auto;
         }
+
         .result-card__raw {
             font-size: 11px;
             color: var(--text-muted);
@@ -373,6 +478,7 @@
             gap: 12px;
             margin-left: 46px;
         }
+
         .product-chip {
             background: var(--bg-input);
             border: 1px solid var(--border);
@@ -380,25 +486,30 @@
             padding: 14px 16px;
             transition: var(--transition);
         }
+
         .product-chip:hover {
             border-color: var(--success);
             background: var(--success-soft);
         }
+
         .product-chip__header {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-bottom: 8px;
         }
+
         .product-chip__brand {
             font-size: 14px;
             font-weight: 600;
             color: var(--success);
         }
+
         .product-chip__generic {
             font-size: 11px;
             color: var(--text-muted);
         }
+
         .product-chip__desc {
             font-size: 12.5px;
             color: var(--text-secondary);
@@ -422,12 +533,14 @@
             opacity: 0;
             transition: var(--transition);
         }
+
         .toast.show {
             transform: translateY(0);
             opacity: 1;
         }
+
         .toast.warning {
-            border-color: rgba(251,191,36,0.4);
+            border-color: rgba(251, 191, 36, 0.4);
             background: var(--warning-soft);
         }
 
@@ -437,6 +550,7 @@
                 opacity: 0;
                 transform: translateY(12px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -445,168 +559,290 @@
 
         /* ─── Responsive ──────────────────────────────────────────── */
         @media (max-width: 640px) {
-            .app { padding: 20px 14px 40px; }
-            .input-section, .result-card { padding: 18px; }
-            .actions { flex-direction: column; }
-            .product-grid { margin-left: 0; grid-template-columns: 1fr; }
-            .result-card__dept { margin-left: 0; margin-top: 4px; }
-            .result-card__header { flex-wrap: wrap; }
+            .app {
+                padding: 20px 14px 40px;
+            }
+
+            .input-section,
+            .result-card {
+                padding: 18px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .product-grid {
+                margin-left: 0;
+                grid-template-columns: 1fr;
+            }
+
+            .result-card__dept {
+                margin-left: 0;
+                margin-top: 4px;
+            }
+
+            .result-card__header {
+                flex-wrap: wrap;
+            }
         }
     </style>
 </head>
+
 <body>
 
-<div class="app">
-    <!-- Header -->
-    <header class="header">
-        <div class="header__logo">
-            <div class="header__icon">📋</div>
-            <h1 class="header__title">CRM 操作介面</h1>
-        </div>
-        <p class="header__subtitle">貼入待訪名單，自動解析科別與匹配產品</p>
-    </header>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header__logo">
+                <div class="header__icon">📋</div>
+                <h1 class="header__title">CRM 操作介面</h1>
+            </div>
+            <p class="header__subtitle">貼入待訪名單，自動解析科別與匹配產品</p>
+        </header>
 
-    <!-- Input Section -->
-    <section class="input-section">
-        <div class="section-label">
-            <span class="section-label__dot"></span>
-            待訪名單
-        </div>
-        <div class="textarea-wrapper">
-            <textarea
-                id="visitInput"
-                placeholder="每行一筆，格式: 醫院/科別/姓名/等級&#10;&#10;範例:&#10;慈濟/URO/吳書雨/B&#10;耕莘/OBS/王小明/A&#10;新光/泌尿科/李大華/C"
-                spellcheck="false"
-            ></textarea>
-        </div>
-        <p class="example-hint">
-            支援格式: <code>醫院/科別/姓名/等級</code>，科別可用中文或英文代碼 (URO, OBS, PED, FM)
-        </p>
-    </section>
-
-    <!-- Actions -->
-    <div class="actions">
-        <button id="btnParse" class="btn btn--primary" onclick="doParse()">
-            <span>🔍</span> 解析名單
-        </button>
-        <button id="btnExecute" class="btn btn--execute" onclick="doExecute()" disabled>
-            <span>🚀</span> 執行自動化
-        </button>
-        <button class="btn btn--secondary" onclick="doClear()">
-            <span>🗑️</span> 清除
-        </button>
-    </div>
-
-    <!-- Status Bar -->
-    <div id="statusBar" class="status-bar">
-        <div class="spinner" id="statusSpinner"></div>
-        <span class="status-bar__text" id="statusText"></span>
-        <span class="status-bar__count" id="statusCount"></span>
-    </div>
-
-    <!-- Results -->
-    <section id="resultsSection" class="results-section">
-        <div class="results-header">
+        <!-- Input Section -->
+        <section class="input-section">
             <div class="section-label">
                 <span class="section-label__dot"></span>
-                解析結果
+                待訪名單
             </div>
+            <div class="textarea-wrapper">
+                <textarea id="visitInput"
+                    placeholder="每行一筆，格式: 醫院/科別/姓名/等級&#10;&#10;範例:&#10;慈濟/URO/吳書雨/B&#10;耕莘/OBS/王小明/A&#10;新光/泌尿科/李大華/C"
+                    spellcheck="false"></textarea>
+            </div>
+            <p class="example-hint">
+                支援格式: <code>醫院/科別/姓名/等級</code>，科別可用中文或英文代碼 (URO, OBS, PED, FM)
+            </p>
+        </section>
+
+        <!-- Actions -->
+        <div class="actions">
+            <button id="btnParse" class="btn btn--primary" onclick="doParse()">
+                <span>🔍</span> 解析名單
+            </button>
+            <button id="btnExecute" class="btn btn--execute" onclick="doExecute()" disabled>
+                <span>🚀</span> 執行自動化
+            </button>
+            <button class="btn btn--secondary" onclick="doClear()">
+                <span>🗑️</span> 清除
+            </button>
         </div>
-        <div id="resultsContainer"></div>
-    </section>
-</div>
 
-<!-- Toast -->
-<div id="toast" class="toast"></div>
+        <!-- Status Bar -->
+        <div id="statusBar" class="status-bar">
+            <div class="spinner" id="statusSpinner"></div>
+            <span class="status-bar__text" id="statusText"></span>
+            <span class="status-bar__count" id="statusCount"></span>
+        </div>
 
-<script>
-/* ─── State ───────────────────────────────────────────────── */
-let parsedEntries = [];
+        <!-- Execution Status -->
+        <section id="executionSection" class="execution-section">
+            <div class="section-label">
+                <span class="section-label__dot"></span>
+                執行進度
+            </div>
+            <div class="execution-card">
+                <div class="progress-header">
+                    <span>自動化進度</span>
+                    <span id="progressText">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="progressBarFill" class="progress-bar-fill"></div>
+                </div>
+                <div id="executionLog" class="execution-log"></div>
+            </div>
+        </section>
 
-/* ─── API Calls ───────────────────────────────────────────── */
-async function doParse() {
-    const text = document.getElementById('visitInput').value.trim();
-    if (!text) {
-        showToast('⚠️ 請先貼入待訪名單', 'warning');
-        return;
-    }
+        <!-- Results -->
+        <section id="resultsSection" class="results-section">
+            <div class="results-header">
+                <div class="section-label">
+                    <span class="section-label__dot"></span>
+                    解析結果
+                </div>
+            </div>
+            <div id="resultsContainer"></div>
+        </section>
+    </div>
 
-    showStatus('loading', '正在解析待訪名單…');
-    document.getElementById('btnParse').disabled = true;
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
 
-    try {
-        const res = await fetch('/api/parse', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text }),
-        });
+    <script>
+        /* ─── State ───────────────────────────────────────────────── */
+        let parsedEntries = [];
 
-        const data = await res.json();
+        /* ─── API Calls ───────────────────────────────────────────── */
+        async function doParse() {
+            const text = document.getElementById('visitInput').value.trim();
+            if (!text) {
+                showToast('⚠️ 請先貼入待訪名單', 'warning');
+                return;
+            }
 
-        if (!res.ok) {
-            showStatus('error', data.error || '解析失敗');
-            return;
+            showStatus('loading', '正在解析待訪名單…');
+            document.getElementById('btnParse').disabled = true;
+
+            try {
+                const res = await fetch('/api/parse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text }),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showStatus('error', data.error || '解析失敗');
+                    return;
+                }
+
+                parsedEntries = data.entries;
+                showStatus('success', `成功解析`, `${data.count} 筆`);
+                renderResults(data.entries);
+                document.getElementById('btnExecute').disabled = false;
+            } catch (err) {
+                showStatus('error', `連線錯誤: ${err.message}`);
+            } finally {
+                document.getElementById('btnParse').disabled = false;
+            }
         }
 
-        parsedEntries = data.entries;
-        showStatus('success', `成功解析`, `${data.count} 筆`);
-        renderResults(data.entries);
-        document.getElementById('btnExecute').disabled = false;
-    } catch (err) {
-        showStatus('error', `連線錯誤: ${err.message}`);
-    } finally {
-        document.getElementById('btnParse').disabled = false;
-    }
-}
+        async function doExecute() {
+            if (!parsedEntries.length) {
+                showToast('⚠️ 請先解析名單', 'warning');
+                return;
+            }
 
-async function doExecute() {
-    if (!parsedEntries.length) {
-        showToast('⚠️ 請先解析名單', 'warning');
-        return;
-    }
+            showStatus('loading', '發送執行請求中…');
+            document.getElementById('btnExecute').disabled = true;
+            document.getElementById('btnParse').disabled = true;
 
-    showStatus('loading', '正在連接 CRM…');
-    document.getElementById('btnExecute').disabled = true;
+            try {
+                const res = await fetch('/api/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: document.getElementById('visitInput').value.trim() }),
+                });
 
-    try {
-        const res = await fetch('/api/execute', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ entries: parsedEntries }),
-        });
+                const data = await res.json();
+                if (data.status === 'error' || data.status === 'busy') {
+                    showStatus('error', data.message);
+                    document.getElementById('btnExecute').disabled = false;
+                    document.getElementById('btnParse').disabled = false;
+                } else {
+                    showStatus('success', data.message);
+                    document.getElementById('executionSection').classList.add('visible');
+                    startPollingStatus();
+                }
+            } catch (err) {
+                showStatus('error', `連線錯誤: ${err.message}`);
+                document.getElementById('btnExecute').disabled = false;
+                document.getElementById('btnParse').disabled = false;
+            }
+        }
 
-        const data = await res.json();
-        showStatus(
-            data.status === 'error' ? 'error' : 'success',
-            data.message
-        );
-    } catch (err) {
-        showStatus('error', `連線錯誤: ${err.message}`);
-    } finally {
-        document.getElementById('btnExecute').disabled = false;
-    }
-}
+        let pollInterval;
+        let logCount = 0;
 
-function doClear() {
-    document.getElementById('visitInput').value = '';
-    document.getElementById('resultsSection').classList.remove('visible');
-    document.getElementById('statusBar').classList.remove('visible');
-    document.getElementById('resultsContainer').innerHTML = '';
-    document.getElementById('btnExecute').disabled = true;
-    parsedEntries = [];
-}
+        async function startPollingStatus() {
+            document.getElementById('executionLog').innerHTML = '';
+            updateProgress(0, 0, parsedEntries.length);
+            logCount = 0;
 
-/* ─── Render ──────────────────────────────────────────────── */
-function renderResults(entries) {
-    const container = document.getElementById('resultsContainer');
-    container.innerHTML = '';
+            pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/status');
+                    const data = await res.json();
 
-    entries.forEach((entry, i) => {
-        const card = document.createElement('div');
-        card.className = 'result-card';
-        card.style.animationDelay = `${i * 0.06}s`;
+                    renderProgress(data);
 
-        const productsHtml = entry.selected_products.map(p => `
+                    if (!data.running && (data.result === 'success' || data.result === 'error')) {
+                        clearInterval(pollInterval);
+                        document.getElementById('btnExecute').disabled = false;
+                        document.getElementById('btnParse').disabled = false;
+
+                        if (data.result === 'success') {
+                            showStatus('success', '✅ 自動化執行完畢！', '');
+                            updateProgress(100, parsedEntries.length, parsedEntries.length);
+                        } else {
+                            showStatus('error', `❌ 執行發生錯誤: ${data.error}`, '');
+                        }
+                    }
+                } catch (err) {
+                    console.error('Polling error:', err);
+                }
+            }, 1500);
+        }
+
+        function renderProgress(data) {
+            const logEl = document.getElementById('executionLog');
+
+            if (data.progress && data.progress.length > logCount) {
+                // Append only new logs
+                const newLogs = data.progress.slice(logCount);
+                let latestTotal = parsedEntries.length;
+                let latestIdx = 0;
+
+                const htmls = newLogs.map(p => {
+                    let icon = 'ℹ️';
+                    if (p.step === 'error') icon = '❌';
+                    else if (p.step === 'done') icon = '✅';
+                    else if (p.step === 'appointment') icon = '📝';
+                    else if (p.step === 'login') icon = '🔑';
+                    else if (p.step === 'daily_report') icon = '📅';
+
+                    let text = `[${p.step}]`;
+                    if (p.index) text += ` (${p.index}/${p.total || latestTotal})`;
+                    if (p.detail) text += ` - ${p.detail}`;
+
+                    if (p.index) latestIdx = p.index;
+                    if (p.total) latestTotal = p.total;
+
+                    return `<div>${icon} ${escHtml(text)}</div>`;
+                });
+
+                logEl.insertAdjacentHTML('beforeend', htmls.join(''));
+                logEl.scrollTop = logEl.scrollHeight;
+                logCount = data.progress.length;
+
+                // Update progress bar
+                if (latestIdx > 0 && latestTotal > 0) {
+                    const percent = Math.round((latestIdx / latestTotal) * 100);
+                    updateProgress(percent, latestIdx, latestTotal);
+                }
+            }
+        }
+
+        function updateProgress(percent, current, total) {
+            document.getElementById('progressBarFill').style.width = `${percent}%`;
+            document.getElementById('progressText').textContent = total ? `${percent}% (${current}/${total})` : `${percent}%`;
+        }
+
+        function doClear() {
+            document.getElementById('visitInput').value = '';
+            document.getElementById('resultsSection').classList.remove('visible');
+            document.getElementById('executionSection').classList.remove('visible');
+            document.getElementById('statusBar').classList.remove('visible');
+            document.getElementById('resultsContainer').innerHTML = '';
+            document.getElementById('btnExecute').disabled = true;
+            if (pollInterval) clearInterval(pollInterval);
+            parsedEntries = [];
+        }
+
+        /* ─── Render ──────────────────────────────────────────────── */
+        function renderResults(entries) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+
+            entries.forEach((entry, i) => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.style.animationDelay = `${i * 0.06}s`;
+
+                const productsHtml = entry.selected_products.map(p => `
             <div class="product-chip">
                 <div class="product-chip__header">
                     <span class="product-chip__brand">💊 ${escHtml(p.brand_name)}</span>
@@ -616,7 +852,7 @@ function renderResults(entries) {
             </div>
         `).join('');
 
-        card.innerHTML = `
+                card.innerHTML = `
             <div class="result-card__header">
                 <div class="result-card__index">${i + 1}</div>
                 <span class="result-card__name">${escHtml(entry.customer_name)}</span>
@@ -626,45 +862,46 @@ function renderResults(entries) {
             <div class="product-grid">${productsHtml || '<span style="color:var(--text-muted);font-size:13px;">無匹配產品</span>'}</div>
         `;
 
-        container.appendChild(card);
-    });
+                container.appendChild(card);
+            });
 
-    document.getElementById('resultsSection').classList.add('visible');
-}
+            document.getElementById('resultsSection').classList.add('visible');
+        }
 
-/* ─── UI Helpers ──────────────────────────────────────────── */
-function showStatus(type, message, count) {
-    const bar = document.getElementById('statusBar');
-    const spinner = document.getElementById('statusSpinner');
-    const textEl = document.getElementById('statusText');
-    const countEl = document.getElementById('statusCount');
+        /* ─── UI Helpers ──────────────────────────────────────────── */
+        function showStatus(type, message, count) {
+            const bar = document.getElementById('statusBar');
+            const spinner = document.getElementById('statusSpinner');
+            const textEl = document.getElementById('statusText');
+            const countEl = document.getElementById('statusCount');
 
-    bar.className = `status-bar visible ${type}`;
-    spinner.style.display = type === 'loading' ? 'block' : 'none';
-    textEl.textContent = message;
-    countEl.textContent = count || '';
-}
+            bar.className = `status-bar visible ${type}`;
+            spinner.style.display = type === 'loading' ? 'block' : 'none';
+            textEl.textContent = message;
+            countEl.textContent = count || '';
+        }
 
-function showToast(message, type) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.className = `toast show ${type || ''}`;
-    setTimeout(() => toast.classList.remove('show'), 2500);
-}
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type || ''}`;
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
 
-function escHtml(str) {
-    if (!str) return '';
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+        function escHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
 
-/* ─── Keyboard Shortcut ──────────────────────────────────── */
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        doParse();
-    }
-});
-</script>
+        /* ─── Keyboard Shortcut ──────────────────────────────────── */
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                doParse();
+            }
+        });
+    </script>
 
 </body>
+
 </html>

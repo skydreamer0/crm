@@ -1,0 +1,2362 @@
+[
+  {
+    "id": "/syncrm/_common/styles/fonts.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/syncrm/_common/styles/global.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/syncrm/_common/styles/theme.css.aspx?lcid=1028&theme=outlook15white&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/syncrm/_common/styles/main.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/syncrm/_forms/controls/controls.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/syncrm/_controls/navbar/navbar.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/syncrm/_controls/refreshform/flyoutdialog.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/css/1028/cui.css?ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/syncrm/_common/scriptresx.ashx?lcid=1028&ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/syncrm/_common/global.ashx?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/jquery1.7.2.min.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/crminternalutility.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/jquery.tmpl.min.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/syncrm/_common/entityproperties/entitypropertiesutil.js.aspx?tstamp=416108380&ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/main.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/performance.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/maincontrols.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/styles/autotooltip.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_controls/datetime/date.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_controls/lookupmru/lookupmrulist.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/inlineeditcommon.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_controls/inlineedit/inlineeditmodel.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_controls/globalquickcreate/globalquickcreatebehavior.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_controls/navbar/navbar.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/jquery_ui_1.8.21.min.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_forms/datetime.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_controls/flyoutdialog/flyoutdialog.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_controls/ribbon/ribbon.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/ribbonactions.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/commandbaractions.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/syncrm/_controls/ribbon/ribbonlayout.js.aspx?cb=true&hierarchy=00000000-0000-0000-0000-000000000000&id=mscrm.basichometab&ie=0&ise=1&lcid=1028&mver=416108380&oc=0&page=%2fmain.aspx&rver=764504326&ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/_static/_common/scripts/presence.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "crmEventManager",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "crmHistoryManager",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "crmRecentlyViewed",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "crmLookupMru",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "crmMasthead",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "Microsoft Dynamics CRM日報日報 - 產品介紹明細新增日報 - 產品介紹明細建立蕭兆軒SYNCRM",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "navStatusArea",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "navStatusArea",
+    "frame": 0
+  },
+  {
+    "id": "navBar",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "Microsoft Dynamics CRM日報日報 - 產品介紹明細新增日報 - 產品介紹明細建立蕭兆軒SYNCRM",
+    "class": "navigationControl",
+    "frame": 0
+  },
+  {
+    "id": "navTabGroupDiv",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "Microsoft Dynamics CRM日報日報 - 產品介紹明細新增日報 - 產品介紹明細建立蕭兆軒SYNCRM",
+    "class": "navTabGroup",
+    "frame": 0
+  },
+  {
+    "id": "Tab1",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "Microsoft Dynamics CRM",
+    "text": "Microsoft Dynamics CRM",
+    "class": "navTabButton navTabButtonModuleSwitcher",
+    "frame": 0
+  },
+  {
+    "id": "navTabLogoImage",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "navTabLogoTextId",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "Microsoft Dynamics CRM",
+    "class": "navTabLogoText navTabHidden",
+    "frame": 0
+  },
+  {
+    "id": "TabHome",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "首頁",
+    "text": "",
+    "class": "navTabButton navHomeButton",
+    "frame": 0
+  },
+  {
+    "id": "Tabdailyreport",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "日報",
+    "text": "日報",
+    "class": "navTabButton",
+    "frame": 0
+  },
+  {
+    "id": "navTabModuleButtonTextId",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報",
+    "class": "navTabButtonText navTabModuleButton",
+    "frame": 0
+  },
+  {
+    "id": "Tabnew_keyproduct-main",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "日報 - 產品介紹明細",
+    "text": "日報 - 產品介紹明細",
+    "class": "navTabButton navTabButtonLeft",
+    "frame": 0
+  },
+  {
+    "id": "Tabnew_keyproduct",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "日報 - 產品介紹明細",
+    "text": "",
+    "class": "navTabButton navTabButtonRight",
+    "frame": 0
+  },
+  {
+    "id": "TabNode_tab0Tab-main",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "新增日報 - 產品介紹明細",
+    "text": "新增日報 - 產品介紹明細",
+    "class": "navTabButton",
+    "frame": 0
+  },
+  {
+    "id": "GQC",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "建立",
+    "text": "建立",
+    "class": "navTabButton",
+    "frame": 0
+  },
+  {
+    "id": "navTabGlobalCreateImage",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "globalCreateButtonImage",
+    "frame": 0
+  },
+  {
+    "id": "navBarGlobalQuickCreateTextId",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "建立",
+    "class": "navTabButtonLabel navTabHidden",
+    "frame": 0
+  },
+  {
+    "id": "navTabQuickCreateSpacer",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "navTabQuickCreateSpacer",
+    "frame": 0
+  },
+  {
+    "id": "TabUserInfoId",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "蕭兆軒SYNCRM",
+    "class": "navTabButton navTabButtonUserInfo navTabDisableHover",
+    "frame": 0
+  },
+  {
+    "id": "navTabButtonUserInfoLinkId",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "蕭兆軒SYNCRM",
+    "class": "navTabButtonLink",
+    "frame": 0
+  },
+  {
+    "id": "navBarUserInfoTextId",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "蕭兆軒SYNCRM",
+    "class": "navTabButtonLabel",
+    "frame": 0
+  },
+  {
+    "id": "TabButtonSettingsId",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "設定",
+    "text": "",
+    "class": "navTabButton navTabButtonSettings",
+    "frame": 0
+  },
+  {
+    "id": "navBarSettingsId",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "TabButtonHelpId",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "說明",
+    "text": "",
+    "class": "navTabButton navTabButtonHelp",
+    "frame": 0
+  },
+  {
+    "id": "navTabButtonHelpImageId",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "navTabHelpImage",
+    "frame": 0
+  },
+  {
+    "id": "navBarOverlay",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "navBarOverlay",
+    "frame": 0
+  },
+  {
+    "id": "crmTopBar",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "儲存​​      儲存並新增​​      新增​​",
+    "class": "ms-crm-TopBarContainer ms-crm-TopBarContainerForm newNavBarMode",
+    "frame": 0
+  },
+  {
+    "id": "crmRibbonManager",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "儲存​​      儲存並新增​​      新增​​",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "commandContainer0",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "儲存​​      儲存並新增​​      新增​​",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "new_keyproduct|NoRelationship|Form|Mscrm.Form.new_keyproduct.Save",
+    "tag": "li",
+    "type": "",
+    "name": "",
+    "title": "儲存  \n\n儲存此日報 - 產品介紹明細。",
+    "text": "儲存​​",
+    "class": "ms-crm-CommandBarItem ms-crm-CommandBar-Menu ms-crm-CommandBar-Button",
+    "frame": 0
+  },
+  {
+    "id": "new_keyproduct|NoRelationship|Form|Mscrm.Form.new_keyproduct.SaveAndNew",
+    "tag": "li",
+    "type": "",
+    "name": "",
+    "title": "儲存並新增  \n\n儲存此日報 - 產品介紹明細，並開啟表單以建立新日報 - 產品介紹明細。",
+    "text": "儲存並新增​​",
+    "class": "ms-crm-CommandBarItem ms-crm-CommandBar-Menu ms-crm-CommandBar-Button",
+    "frame": 0
+  },
+  {
+    "id": "new_keyproduct|NoRelationship|Form|Mscrm.Form.new_keyproduct.NewRecord",
+    "tag": "li",
+    "type": "",
+    "name": "",
+    "title": "新增​​ \n\n建立新日報 - 產品介紹明細記錄。",
+    "text": "新增​​",
+    "class": "ms-crm-CommandBarItem ms-crm-CommandBar-Menu ms-crm-CommandBar-Button",
+    "frame": 0
+  },
+  {
+    "id": "moreCommands",
+    "tag": "li",
+    "type": "",
+    "name": "",
+    "title": "更多命令",
+    "text": "",
+    "class": "ms-crm-CommandBarItem ms-crm-CommandBar-Menu ms-crm-CommandBar-MoreMenu",
+    "frame": 0
+  },
+  {
+    "id": "contextualActionBar",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "recordSetToolBarProxy",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Form-RecNav recordSetControlProxy contextualAction",
+    "frame": 0
+  },
+  {
+    "id": "popoutButton",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "contextualAction",
+    "frame": 0
+  },
+  {
+    "id": "crmContentPanel",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "正在載入...",
+    "class": "crmContentPanel",
+    "frame": 0
+  },
+  {
+    "id": "contentPanelAnchor",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "crmContentPanel",
+    "frame": 0
+  },
+  {
+    "id": "contentIFrame0",
+    "tag": "iframe",
+    "type": "",
+    "name": "contentIFrame0",
+    "title": "內容區域",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "loading",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "perceivedRibbonId",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "crm2013nav",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 0
+  },
+  {
+    "id": "/SYNCRM/_controls/notifications/notifications.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/SYNCRM/_controls/refreshform/flyoutdialog.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/SYNCRM/_nav/menu.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/SYNCRM/_common/styles/menucore.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_common/entityproperties/entitypropertiesutil.js.aspx?tstamp=416108380&ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "Type.registerNamespace('Mscrm');Mscrm.EntityPropUtil=function(){};Mscrm.EntityPr",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_forms/formscript.js.aspx?formname=crmform&airenabled=true&businessrulesversion=%7b638573120390000120%7d1028&formid=04c74d43-fd19-4973-86d2-640cd0b1b2e5&fver=1319739923&ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "Mscrm.BusinessRulesScript= function() {};\r\nMscrm.BusinessRulesScript.GetResource",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_controls/ribbon/ribbonlayout.js.aspx?cb=true&econtext=form&etn=new_keyproduct&hierarchy=04c74d43-fd19-4973-86d2-640cd0b1b2e5&id=mscrm.commandbar&ie=0&ise=1&lcid=1028&mver=416108380&oc=0&page=%2f_forms%2fread%2fpage.aspx&rver=764504326&ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "Type.registerNamespace('Mscrm');Mscrm.AggregatePerformanceMarkers.beginMarker(\"C",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/{638985991680000119}/webresources/mag_leftnavigation.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "function ChangeNavigation() {\n    function addCss(cssString) {\n        var head",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/{638985991680000119}/webresources/new_xrmservicetoolkit.min",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/{638985991680000119}/webresources/new_xrmservicetoolkit.min_jquery",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/{638985991680000119}/webresources/new_xrmservicetoolkit.min_json2",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/{638985991680000119}/webresources/new_new_setcallnotesfilter",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/{638985991680000119}/webresources/new_setappointmentprdlock",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/{638985991680000119}/webresources/new_grtypefilterproduct",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "containerLoadingProgress",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "loading",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "crmForm",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊新增日報 - 產品介紹明細\n\n\n\n\t負責人\n\t\n\t\t蕭兆軒蕭兆軒\n\t\n一般一般約會\n\n\t吳書雨_HIN2310",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "rofContainer",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊新增日報 - 產品介紹明細\n\n\n\n\t負責人\n\t\n\t\t蕭兆軒蕭兆軒\n\t\n一般一般約會\n\n\t吳書雨_HIN23100",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "crmLookupMru",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "SubGridCommandBarData",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊新增日報 - 產品介紹明細\n\n\n\n\t負責人\n\t\n\t\t蕭兆軒蕭兆軒\n\t\n一般一般約會\n\n\t吳書雨_HIN231004A_慈濟台北",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "crmFormSubmit",
+    "tag": "form",
+    "type": "",
+    "name": "crmFormSubmit",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "crmFormSubmitId",
+    "tag": "input",
+    "type": "hidden",
+    "name": "crmFormSubmitId",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "crmFormSubmitObjectType",
+    "tag": "input",
+    "type": "hidden",
+    "name": "crmFormSubmitObjectType",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "crmFormSubmitSecurity",
+    "tag": "input",
+    "type": "hidden",
+    "name": "crmFormSubmitSecurity",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "crmFormSubmitObjectTypeName",
+    "tag": "input",
+    "type": "hidden",
+    "name": "crmFormSubmitObjectTypeName",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "mainContainer",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊新增日報 - 產品介紹明細\n\n\n\n\t負責人\n\t\n\t\t蕭兆軒蕭兆軒\n\t\n一般一般約會\n\n\t吳書雨_HIN231004A_慈濟台北_",
+    "class": "ms-crm-readForm-Container ms-crm-Form-Container",
+    "frame": 1
+  },
+  {
+    "id": "formContainer",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊新增日報 - 產品介紹明細\n\n\n\n\t負責人\n\t\n\t\t蕭兆軒蕭兆軒\n\t\n一般一般約會\n\n\t吳書雨_HIN231004A_慈濟台北_",
+    "class": "ms-crm-Form-Page",
+    "frame": 1
+  },
+  {
+    "id": "formHeaderContainer",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊新增日報 - 產品介紹明細\n\n\n\n\t負責人\n\t\n\t\t蕭兆軒蕭兆軒",
+    "class": "ms-crm-Form-HeaderContainer",
+    "frame": 1
+  },
+  {
+    "id": "crmFormHeaderTop",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊新增日報 - 產品介紹明細\n\n\n\n\t負責人\n\t\n\t\t蕭兆軒蕭兆軒",
+    "class": "ms-crm-Form-StandaloneSection",
+    "frame": 1
+  },
+  {
+    "id": "",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "HeaderTitleElement",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊新增日報 - 產品介紹明細",
+    "class": "ms-crm-Form-Breadcrumb ms-crm-HeaderTilesTitleWrapperElement",
+    "frame": 1
+  },
+  {
+    "id": "form_title_div",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊新增日報 - 產品介紹明細",
+    "class": "ms-crm-Form-Breadcrumb",
+    "frame": 1
+  },
+  {
+    "id": "formselectorcontainer",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "header_crmFormSelector",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊",
+    "class": "ms-crm-FormSelector",
+    "frame": 1
+  },
+  {
+    "id": "FormTitle",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "新增日報 - 產品介紹明細",
+    "class": "ms-crm-Form-Title-Data autoellipsis",
+    "frame": 1
+  },
+  {
+    "id": "recordSetToolBar",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Form-RecNav",
+    "frame": 1
+  },
+  {
+    "id": "HeaderTilesWrapperLayoutElement",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "負責人\n\t\n\t\t蕭兆軒蕭兆軒",
+    "class": "ms-crm-HeaderTilesWrapperLayoutElement",
+    "frame": 1
+  },
+  {
+    "id": "header_ownerid_c",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "負責人編號",
+    "text": "負責人",
+    "class": "ms-crm-ReadField-Normal ms-crm-FieldLabel-LeftAlign",
+    "frame": 1
+  },
+  {
+    "id": "header_ownerid_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "蕭兆軒蕭兆軒",
+    "class": "ms-crm-Field-Data-Print",
+    "frame": 1
+  },
+  {
+    "id": "header_ownerid",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "蕭兆軒蕭兆軒",
+    "class": "ms-crm-Inline-Chrome",
+    "frame": 1
+  },
+  {
+    "id": "crmFormHeader",
+    "tag": "table",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Form-StandaloneSection",
+    "frame": 1
+  },
+  {
+    "id": "crmNotifications",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "Notifications Notifications-strict Notifications-strict-bottom",
+    "frame": 1
+  },
+  {
+    "id": "tdAreas",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "一般一般約會\n\n\t吳書雨_HIN231004A_慈濟台北_泌尿外科   吳書雨_HIN231004A_慈濟台北_泌尿外科   \n吳書雨_HIN231004A_慈",
+    "class": "ms-crm-Form-AreaContainer ms-crm-Form-Background",
+    "frame": 1
+  },
+  {
+    "id": "areaForm",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "一般一般約會\n\n\t吳書雨_HIN231004A_慈濟台北_泌尿外科   吳書雨_HIN231004A_慈濟台北_泌尿外科   \n吳書雨_HIN231004A_慈",
+    "class": "ms-crm-Form-Area ms-crm-Form-Area-position",
+    "frame": 1
+  },
+  {
+    "id": "formBodyContainer",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "一般一般約會\n\n\t吳書雨_HIN231004A_慈濟台北_泌尿外科   吳書雨_HIN231004A_慈濟台北_泌尿外科   \n吳書雨_HIN231004A_慈",
+    "class": "ms-crm-FormBodyContainer ms-crm-NoRIPane",
+    "frame": 1
+  },
+  {
+    "id": "crmFormTabContainer",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "一般一般約會\n\n\t吳書雨_HIN231004A_慈濟台北_泌尿外科   吳書雨_HIN231004A_慈濟台北_泌尿外科   \n吳書雨_HIN231004A_慈",
+    "class": "ms-crm-InlineTabContainer-Read",
+    "frame": 1
+  },
+  {
+    "id": "tab0",
+    "tag": "div",
+    "type": "",
+    "name": "{ac9eb04b-7589-4bef-9769-acab5c5fc3cb}",
+    "title": "",
+    "text": "一般一般約會\n\n\t吳書雨_HIN231004A_慈濟台北_泌尿外科   吳書雨_HIN231004A_慈濟台北_泌尿外科   \n吳書雨_HIN231004A_慈",
+    "class": "ms-crm-InlineTab-Read",
+    "frame": 1
+  },
+  {
+    "id": "{ac9eb04b-7589-4bef-9769-acab5c5fc3cb}_Header",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "一般",
+    "class": "ms-crm-InlineTabHeader ms-crm-InlineTabBorder",
+    "frame": 1
+  },
+  {
+    "id": "{ac9eb04b-7589-4bef-9769-acab5c5fc3cb}_Expander",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "摺疊此索引標籤",
+    "text": "",
+    "class": "ms-crm-InlineTabExpander ms-crm-ImageStrip-tab_down",
+    "frame": 1
+  },
+  {
+    "id": "{ac9eb04b-7589-4bef-9769-acab5c5fc3cb}_content",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "一般約會\n\n\t吳書雨_HIN231004A_慈濟台北_泌尿外科   吳書雨_HIN231004A_慈濟台北_泌尿外科   \n吳書雨_HIN231004A_慈濟台",
+    "class": "W ms-crm-InlineTabBody-Read",
+    "frame": 1
+  },
+  {
+    "id": "{4f10e75c-0cf1-473b-96b2-89f203957690}",
+    "tag": "table",
+    "type": "",
+    "name": "{4f10e75c-0cf1-473b-96b2-89f203957690}",
+    "title": "",
+    "text": "一般約會\n\n\t吳書雨_HIN231004A_慈濟台北_泌尿外科   吳書雨_HIN231004A_慈濟台北_泌尿外科   \n吳書雨_HIN231004A_慈濟台",
+    "class": "ms-crm-FormSection",
+    "frame": 1
+  },
+  {
+    "id": "new_subject_c",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "約會",
+    "class": "ms-crm-ReadField-Normal ms-crm-FieldLabel-LeftAlign",
+    "frame": 1
+  },
+  {
+    "id": "new_subject_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "吳書雨_HIN231004A_慈濟台北_泌尿外科   吳書雨_HIN231004A_慈濟台北_泌尿外科   \n吳書雨_HIN231004A_慈濟台北_泌尿外",
+    "class": "ms-crm-Field-Data-Print",
+    "frame": 1
+  },
+  {
+    "id": "new_subject",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "吳書雨_HIN231004A_慈濟台北_泌尿外科   吳書雨_HIN231004A_慈濟台北_泌尿外科   \n吳書雨_HIN231004A_慈濟台北_泌尿外",
+    "class": "ms-crm-Inline-Chrome lookup",
+    "frame": 1
+  },
+  {
+    "id": "new_subject_lookupTable",
+    "tag": "table",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "吳書雨_HIN231004A_慈濟台北_泌尿外科   約會\n 必要",
+    "class": "ms-crm-Lookup",
+    "frame": 1
+  },
+  {
+    "id": "new_subject_lookupDiv",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "吳書雨_HIN231004A_慈濟台北_泌尿外科",
+    "class": "ms-crm-Lookup ms-crm-InlineLookupEdit",
+    "frame": 1
+  },
+  {
+    "id": "new_subject_ledit",
+    "tag": "input",
+    "type": "text",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Hidden-NoBehavior",
+    "frame": 1
+  },
+  {
+    "id": "new_subject_i",
+    "tag": "img",
+    "type": "",
+    "name": "new_subject",
+    "title": "選取值。",
+    "text": "",
+    "class": "ms-crm-InlineLookupEdit",
+    "frame": 1
+  },
+  {
+    "id": "new_product_c",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "產品",
+    "class": "ms-crm-ReadField-Normal ms-crm-FieldLabel-LeftAlign",
+    "frame": 1
+  },
+  {
+    "id": "new_product_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克\nELI 22.5癌立佳持續性藥效皮下注射劑22",
+    "class": "ms-crm-Field-Data-Print",
+    "frame": 1
+  },
+  {
+    "id": "new_product",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克\nELI 22.5癌立佳持續性藥效皮下注射劑22",
+    "class": "ms-crm-Inline-Chrome lookup",
+    "frame": 1
+  },
+  {
+    "id": "new_product_lookupTable",
+    "tag": "table",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克產品",
+    "class": "ms-crm-Lookup",
+    "frame": 1
+  },
+  {
+    "id": "new_product_lookupDiv",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克",
+    "class": "ms-crm-Lookup ms-crm-InlineLookupEdit",
+    "frame": 1
+  },
+  {
+    "id": "lookupItem",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克",
+    "text": "ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克",
+    "class": "ms-crm-Lookup-Item",
+    "frame": 1
+  },
+  {
+    "id": "at{BE103C8F-7787-EB11-8121-D43D7E7A4D9F}",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克",
+    "text": "",
+    "class": "atLink",
+    "frame": 1
+  },
+  {
+    "id": "new_product_ledit",
+    "tag": "input",
+    "type": "text",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Hidden-NoBehavior",
+    "frame": 1
+  },
+  {
+    "id": "new_product_i",
+    "tag": "img",
+    "type": "",
+    "name": "new_product",
+    "title": "選取值。",
+    "text": "",
+    "class": "ms-crm-InlineLookupEdit",
+    "frame": 1
+  },
+  {
+    "id": "new_product_warn",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-ImageStrip-inlineedit_warning",
+    "frame": 1
+  },
+  {
+    "id": "new_product_w",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Hidden-NoBehavior",
+    "frame": 1
+  },
+  {
+    "id": "new_visitpurpose_c",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "拜訪目的",
+    "class": "ms-crm-ReadField-Normal ms-crm-FieldLabel-LeftAlign",
+    "frame": 1
+  },
+  {
+    "id": "new_visitpurpose_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "--",
+    "class": "ms-crm-Field-Data-Print",
+    "frame": 1
+  },
+  {
+    "id": "new_visitpurpose",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "--",
+    "class": "ms-crm-Inline-Chrome",
+    "frame": 1
+  },
+  {
+    "id": "new_visithour_c",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "拜訪時間(小時)",
+    "class": "ms-crm-ReadField-Normal ms-crm-FieldLabel-LeftAlign",
+    "frame": 1
+  },
+  {
+    "id": "new_visithour_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "--",
+    "class": "ms-crm-Field-Data-Print ms-crm-Field-Number-Print",
+    "frame": 1
+  },
+  {
+    "id": "new_visithour",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "選取以輸入資料",
+    "text": "--",
+    "class": "ms-crm-Inline-Chrome",
+    "frame": 1
+  },
+  {
+    "id": "new_visiteffect_c",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "拜訪效果",
+    "class": "ms-crm-ReadField-Normal ms-crm-FieldLabel-LeftAlign",
+    "frame": 1
+  },
+  {
+    "id": "new_visiteffect_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "--",
+    "class": "ms-crm-Field-Data-Print",
+    "frame": 1
+  },
+  {
+    "id": "new_visiteffect",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "--",
+    "class": "ms-crm-Inline-Chrome",
+    "frame": 1
+  },
+  {
+    "id": "new_desc_c",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "備註",
+    "class": "ms-crm-ReadField-Normal ms-crm-FieldLabel-LeftAlign",
+    "frame": 1
+  },
+  {
+    "id": "new_desc_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "--",
+    "class": "ms-crm-Field-Data-Print",
+    "frame": 1
+  },
+  {
+    "id": "new_desc",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "選取以輸入資料",
+    "text": "--",
+    "class": "ms-crm-Inline-Chrome",
+    "frame": 1
+  },
+  {
+    "id": "new_grtype_c",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "組別",
+    "class": "ms-crm-ReadField-Normal ms-crm-FieldLabel-LeftAlign",
+    "frame": 1
+  },
+  {
+    "id": "new_grtype_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "醫院組醫院組",
+    "class": "ms-crm-Field-Data-Print",
+    "frame": 1
+  },
+  {
+    "id": "new_grtype",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "醫院組醫院組",
+    "class": "ms-crm-Inline-Chrome",
+    "frame": 1
+  },
+  {
+    "id": "new_footnote_c",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "自訂實體的名稱。",
+    "text": "說明",
+    "class": "ms-crm-ReadField-Normal ms-crm-FieldLabel-LeftAlign",
+    "frame": 1
+  },
+  {
+    "id": "new_footnote_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "--",
+    "class": "ms-crm-Field-Data-Print",
+    "frame": 1
+  },
+  {
+    "id": "new_footnote",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "選取以輸入資料",
+    "text": "--",
+    "class": "ms-crm-Inline-Chrome",
+    "frame": 1
+  },
+  {
+    "id": "new_callnotes_c",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "拜訪內容",
+    "class": "ms-crm-ReadField-Normal ms-crm-FieldLabel-LeftAlign",
+    "frame": 1
+  },
+  {
+    "id": "new_callnotes_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "--\n拜訪內容",
+    "class": "ms-crm-Field-Data-Print",
+    "frame": 1
+  },
+  {
+    "id": "new_callnotes",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "--\n拜訪內容",
+    "class": "ms-crm-Inline-Chrome lookup",
+    "frame": 1
+  },
+  {
+    "id": "new_callnotes_lookupTable",
+    "tag": "table",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "拜訪內容",
+    "class": "ms-crm-Lookup",
+    "frame": 1
+  },
+  {
+    "id": "new_callnotes_lookupDiv",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Lookup ms-crm-InlineLookupEdit",
+    "frame": 1
+  },
+  {
+    "id": "new_callnotes_ledit",
+    "tag": "input",
+    "type": "text",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Hidden-NoBehavior",
+    "frame": 1
+  },
+  {
+    "id": "new_callnotes_i",
+    "tag": "img",
+    "type": "",
+    "name": "new_callnotes",
+    "title": "選取值。",
+    "text": "",
+    "class": "ms-crm-InlineLookupEdit",
+    "frame": 1
+  },
+  {
+    "id": "new_callnotes_warn",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-ImageStrip-inlineedit_warning",
+    "frame": 1
+  },
+  {
+    "id": "new_callnotes_w",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Hidden-NoBehavior",
+    "frame": 1
+  },
+  {
+    "id": "formFootersContainer",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "使用中",
+    "class": "formFootersContainer",
+    "frame": 1
+  },
+  {
+    "id": "refreshFormFooterContainer",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "使用中",
+    "class": "ms-crm-Form-FooterContainer refresh-form-footer",
+    "frame": 1
+  },
+  {
+    "id": "crmFormFooter",
+    "tag": "table",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "使用中",
+    "class": "ms-crm-Form-StandaloneSection",
+    "frame": 1
+  },
+  {
+    "id": "footer_statecode_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "使用中",
+    "class": "ms-crm-Field-Data-Print-Bold",
+    "frame": 1
+  },
+  {
+    "id": "footer_statecode",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "使用中",
+    "text": "使用中",
+    "class": "ms-crm-Inline-Chrome",
+    "frame": 1
+  },
+  {
+    "id": "footer_statuscontrol_d",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Field-Data-Print-Bold",
+    "frame": 1
+  },
+  {
+    "id": "footer-status-message-flyout",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "status-message-flyout",
+    "frame": 1
+  },
+  {
+    "id": "footer_statuscontrol",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Read-Message",
+    "frame": 1
+  },
+  {
+    "id": "alert-status-icon",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Read-Image",
+    "frame": 1
+  },
+  {
+    "id": "afooter_statuscontrol",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "titlefooter_statuscontrol",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-Read-MessageTitle",
+    "frame": 1
+  },
+  {
+    "id": "savefooter_statuscontrol",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "儲存",
+    "text": "",
+    "class": "ms-crm-Read-Image",
+    "frame": 1
+  },
+  {
+    "id": "crmNavBar",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊標題一般相關一般活動已關閉的活動關係程序工作階段即時程序",
+    "class": "ms-crm-FormLeftNav-StandardLayout",
+    "frame": 1
+  },
+  {
+    "id": "crmNavBar_paneTD",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊標題一般相關一般活動已關閉的活動關係程序工作階段即時程序",
+    "class": "ms-crm-readForm-navBar-hide",
+    "frame": 1
+  },
+  {
+    "id": "crmFormSelector",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "日報 - 產品介紹明細 : 資訊",
+    "class": "ms-crm-FormSelector",
+    "frame": 1
+  },
+  {
+    "id": "ulTabLinks",
+    "tag": "ul",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "標題一般",
+    "class": "ms-crm-FormSelector",
+    "frame": 1
+  },
+  {
+    "id": "tab0Tab",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "標題",
+    "class": "ms-crm-FormSelector-SubItem",
+    "frame": 1
+  },
+  {
+    "id": "formNavTreeLine",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-ImageStrip-formNavTreeLine ms-crm-FormSelector-SubItem",
+    "frame": 1
+  },
+  {
+    "id": "tab1Tab",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "一般",
+    "class": "ms-crm-FormSelector-SubItem",
+    "frame": 1
+  },
+  {
+    "id": "formNavTreeLineBottom",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-ImageStrip-formNavTreeLineBottom ms-crm-FormSelector-SubItem",
+    "frame": 1
+  },
+  {
+    "id": "crmFormNavSubareas",
+    "tag": "ul",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "一般活動已關閉的活動關係程序工作階段即時程序",
+    "class": "ms-crm-Nav-LeftBar",
+    "frame": 1
+  },
+  {
+    "id": "_NA_Info",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "按一下這裡以取得更多區域",
+    "text": "一般",
+    "class": "ms-crm-Nav-Group-Heading",
+    "frame": 1
+  },
+  {
+    "id": "NA_Info",
+    "tag": "nobr",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "一般",
+    "class": "ms-crm-Nav-Group-Title",
+    "frame": 1
+  },
+  {
+    "id": "navActivities",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "檢視活動",
+    "text": "活動",
+    "class": "ms-crm-Nav-Subarea-Link",
+    "frame": 1
+  },
+  {
+    "id": "ico_18_act",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-ImageStrip-ico_18_act ms-crm-Nav-Subarea-Icon",
+    "frame": 1
+  },
+  {
+    "id": "navActivityHistory",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "檢視已關閉的活動",
+    "text": "已關閉的活動",
+    "class": "ms-crm-Nav-Subarea-Link",
+    "frame": 1
+  },
+  {
+    "id": "ico_18_history",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-ImageStrip-ico_18_history ms-crm-Nav-Subarea-Icon",
+    "frame": 1
+  },
+  {
+    "id": "navConnections",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "檢視關係",
+    "text": "關係",
+    "class": "ms-crm-Nav-Subarea-Link",
+    "frame": 1
+  },
+  {
+    "id": "ico_18_3234",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-ImageStrip-ico_18_3234 ms-crm-Nav-Subarea-Icon",
+    "frame": 1
+  },
+  {
+    "id": "_NA_PROC",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "按一下這裡以取得更多區域",
+    "text": "程序工作階段",
+    "class": "ms-crm-Nav-Group-Heading",
+    "frame": 1
+  },
+  {
+    "id": "NA_PROC",
+    "tag": "nobr",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "程序工作階段",
+    "class": "ms-crm-Nav-Group-Title",
+    "frame": 1
+  },
+  {
+    "id": "navProcessSessions",
+    "tag": "a",
+    "type": "",
+    "name": "",
+    "title": "檢視即時程序",
+    "text": "即時程序",
+    "class": "ms-crm-Nav-Subarea-Link",
+    "frame": 1
+  },
+  {
+    "id": "ico_18_4710_g",
+    "tag": "img",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "ms-crm-ImageStrip-ico_18_4710_g ms-crm-Nav-Subarea-Icon",
+    "frame": 1
+  },
+  {
+    "id": "_inputFormDirtyFlag",
+    "tag": "input",
+    "type": "hidden",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "__Page_crmEventManager",
+    "tag": "span",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_common/styles/fonts.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_common/styles/global.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_common/styles/theme.css.aspx?lcid=1028&theme=outlook15white&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_forms/styles/read.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_controls/compositecontrol/compositecontrol.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_nav/nav.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_grid/appgrid.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_controls/tabs/tabs.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_static/wallcontrol/activitieswallcontent.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/%7b638985991680000119%7d/webresources/msdyn_/styles/wallcontent.1028.css",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_forms/controls/controls.css.aspx?lcid=1028&ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/_static/css/1028/processcontrol.css?ver=-1160809492",
+    "tag": "link",
+    "type": "text/css",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_common/scriptresx.ashx?lcid=1028&ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/syncrm/_common/global.ashx?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/_static/_common/scripts/jquery1.7.2.min.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/_static/_common/scripts/jsrender.min.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "/_static/_common/scripts/crminternalutility.js?ver=-1160809492",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "rootJQueryTemplate",
+    "tag": "script",
+    "type": "text/x-jsrender",
+    "name": "",
+    "title": "",
+    "text": "<html lang='zh'>\r\n<head>\r\n\r\n</head>\r\n<body>\r\n<div id='crmLookupMru'> </div>\r\n<",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "group_1959345455-451858892-1713948411-1401263868-1250882489-367493978-19173614-574022791-696891199-2007586035-1552783829",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "group_1759665639-1968334880-202661451-1039841082-1547461133-1992083491-1000289424-159335543-1194605645-1025323794-1314140682-1793205875-342519603-542820515-1946640899-1603536461-468302605-1405388298-1220618931-511599809-1264077421-1188909594-783705869-374257838-2050812538-512064351",
+    "tag": "script",
+    "type": "text/javascript",
+    "name": "",
+    "title": "",
+    "text": "",
+    "class": "",
+    "frame": 1
+  },
+  {
+    "id": "ariaReadAlert",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "拜訪效果",
+    "class": "hiddenAriaStyle",
+    "frame": 1
+  },
+  {
+    "id": "Dialog_new_product_i_IMenu",
+    "tag": "div",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克2021/3/18 上午 07:21 T5EL1ELI 45癌立佳持續性藥效皮下注射劑45毫克2021/3",
+    "class": "ms-crm-modalDialog",
+    "frame": 1
+  },
+  {
+    "id": "new_product_i_IMenu",
+    "tag": "ul",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克2021/3/18 上午 07:21 T5EL1ELI 45癌立佳持續性藥效皮下注射劑45毫克2021/3",
+    "class": "ms-crm-IL-Menu",
+    "frame": 1
+  },
+  {
+    "id": "item0",
+    "tag": "li",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "ELI 22.5癌立佳持續性藥效皮下注射劑22.5毫克2021/3/18 上午 07:21 T5EL1",
+    "class": "ms-crm-MenuItem-NoOutline ms-crm-IL-MenuItem ms-crm-IL-MenuItem-Rest",
+    "frame": 1
+  },
+  {
+    "id": "item1",
+    "tag": "li",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "ELI 45癌立佳持續性藥效皮下注射劑45毫克2021/3/18 上午 07:22 T5EL2",
+    "class": "ms-crm-MenuItem-NoOutline ms-crm-IL-MenuItem ms-crm-IL-MenuItem-Rest",
+    "frame": 1
+  },
+  {
+    "id": "item2",
+    "tag": "li",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "ELI 7.5癌立佳持續性藥效皮下注射劑7.5毫克2021/3/18 上午 07:22 T5EL0",
+    "class": "ms-crm-MenuItem-NoOutline ms-crm-IL-MenuItem ms-crm-IL-MenuItem-Rest",
+    "frame": 1
+  },
+  {
+    "id": "item3",
+    "tag": "li",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "ELI 癌立佳DEMO2024/12/26 上午 07:10 T5EL3",
+    "class": "ms-crm-MenuItem-NoOutline ms-crm-IL-MenuItem ms-crm-IL-MenuItem-Rest",
+    "frame": 1
+  },
+  {
+    "id": "item4",
+    "tag": "li",
+    "type": "",
+    "name": "",
+    "title": "",
+    "text": "查詢更多記錄",
+    "class": "ms-crm-IL-MenuItem-Lookupmore ms-crm-IL-MenuItem-Lookupmore-Rest",
+    "frame": 1
+  }
+]

@@ -274,6 +274,20 @@ async def main():
         popup_frame = await popup_iframe_el.content_frame()
 
         if popup_frame:
+            # === 預先填寫拜訪對象，以便解鎖後續的產品欄位 ===
+            logger.info("預先填寫拜訪對象 (吳書雨)...")
+            try:
+                abc_field = await popup_frame.wait_for_selector("div#new_abc", timeout=10000)
+                await abc_field.click()
+                await popup_page.wait_for_timeout(1000)
+                await popup_page.keyboard.type("吳書雨")
+                await popup_page.wait_for_timeout(1000)
+                await popup_page.keyboard.press("Enter")
+                await popup_page.wait_for_timeout(1500)
+                logger.info("✅ 已自動填入拜訪對象")
+            except Exception as e:
+                logger.warning(f"⚠️ 拜訪對象填寫失敗: {e} (您可能需要手動填寫)")
+
             # 探索 Tabs
             await explore_tabs(popup_frame)
 

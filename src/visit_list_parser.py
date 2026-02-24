@@ -260,6 +260,43 @@ def get_product_info(product_code: str) -> dict:
     return PRODUCT_CATALOG.get(product_code, {})
 
 
+def resolve_crm_product_id(product_code: str, entry: VisitEntry) -> str:
+    """
+    Resolve the correct CRM Product ID (e.g., '21363' or 'T5EL0').
+    Evaluates dynamic rules based on customer name and department.
+    """
+    info = get_product_info(product_code)
+    pid = info.get("crm_product_id", "")
+    
+    # Normal case
+    if pid and pid != "DYNAMIC":
+        return str(pid)
+        
+    # Dynamic logic case (e.g. ELI)
+    rules = info.get("crm_dynamic_rules", [])
+    for rule in rules:
+        cond = rule.get("condition", "")
+        target_id = str(rule.get("product_id", ""))
+        
+        if "customer_name contains" in cond:
+            keyword = cond.split("'")[1]
+            if keyword in entry.customer_name:
+                return target_id
+        elif "department_code ==" in cond:
+            code = cond.split("'")[1]
+            if entry.department_code == code:
+                return target_id
+        elif cond == "default":
+            return target_id
+            
+    return ""
+
+def should_skip_visit_content(product_code: str) -> bool:
+    """Check if the product should skip the Visit Content field."""
+    info = get_product_info(product_code)
+    return bool(info.get("skip_visit_content", False))
+
+
 def get_random_description(product_code: str) -> str:
     """
     Randomly select one description from the product's list.

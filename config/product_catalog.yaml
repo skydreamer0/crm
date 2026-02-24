@@ -4,6 +4,8 @@ products:
   uri:
     brand_name: Urief
     generic_name: Silodosin
+    crm_search_term: "21363"
+    crm_product_id: "21363"
     descriptions:
       - 作用速度快，給藥後 2~6 小時即可見到最大尿流速明顯改善，且藥效穩定持久。
       - 高度前列腺選擇性，產生姿態性低血壓比例僅 1.3% (與安慰劑類似)，併用降血壓藥亦安全無虞。
@@ -14,6 +16,16 @@ products:
   eli:
     brand_name: Eligard
     generic_name: Leuprolide Acetate
+    crm_search_term: "Eligard"
+    # ELI 的選擇邏輯較特殊，需要動態判定
+    crm_product_id: "DYNAMIC"
+    crm_dynamic_rules:
+      - condition: "customer_name contains '新光'"
+        product_id: "T5EL0" # 7.5
+      - condition: "department_code == 'PED'"
+        product_id: "T5EL2" # 45
+      - condition: "default"
+        product_id: "T5EL1" # 22.5
     descriptions:
       - 採創新的 ATRIGEL 釋放技術，注射體積小且針頭短，大幅降低患者的疼痛不適。
       - 具備 2 倍於傳統劑型的效力，能穩定抑制睪固酮 T < 20 ng/dL，效果媲美手術去勢。
@@ -22,6 +34,8 @@ products:
   oxb:
     brand_name: Oxbu
     generic_name: Oxbutynin ER
+    crm_search_term: "21052"
+    crm_product_id: "21052"
     descriptions:
       - Matrix (基質性系統) 緩釋劑型大幅降低口乾、便祕副作用；且可撥半服用、不影響緩釋效果。
       - 具四重作用機轉（抗膽鹼、解痙、抑制 ATP、局部麻醉），能充分放鬆逼尿肌，達到全方位 OAB 症狀控制。
@@ -31,6 +45,9 @@ products:
   esv:
     brand_name: ESVATIN
     generic_name: Estriol (E3)
+    crm_search_term: "90064"
+    crm_product_id: "90064"
+    skip_visit_content: true # 該廠牌沒有建檔拜訪內容，跳過
     descriptions:
       - 為全新陰道錠劑，劑量精準且容易使用，維持隱私與乾淨，無傳統藥膏滲漏問題。
       - E3 強度僅為 E2 的 1/80 且不轉換，安全性高，不增加乳癌或子宮內膜增生風險。
@@ -39,6 +56,9 @@ products:
   ysl:
     brand_name: Yselty
     generic_name: Linzagolix
+    crm_search_term: "21711"
+    crm_product_id: "21711"
+    skip_visit_content: true # 該廠牌沒有建檔拜訪內容，跳過
     descriptions:
       - 每日一次口服，可依患者狀況調整劑量，提供個人化的子宮肌瘤治療方案。
       - 臨床試驗顯示能有效減輕經血量，改善貧血狀況，並提升患者的生活品質。
@@ -47,6 +67,8 @@ products:
   lmn:
     brand_name: Lomexin
     generic_name: Fenticonazole Nitrate
+    crm_search_term: "T6LM0"
+    crm_product_id: "T6LM0"
     descriptions:
       - 為廣效性抗黴菌藥物，治療率高達 95% 以上。
       - 陰道軟膠囊隨體溫快速溶解，覆蓋範圍廣且復發率低，能讓症狀迅速解除，患者順從性佳。

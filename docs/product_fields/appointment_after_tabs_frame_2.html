@@ -1,0 +1,100 @@
+<html><head>
+    <title></title>
+    <script src="new_jquery" type="text/javascript"></script>
+    <script type="text/javascript">
+
+        // function will be called when web resource is loaded on Form.
+        $(document).ready(function () {
+            ConvertDropDownToCheckBoxList();
+        });
+
+        //Coverts option list to checkbox list.
+        function ConvertDropDownToCheckBoxList() {
+
+            var dropdownOptions = parent.Xrm.Page.getAttribute("new_visititem").getOptions();
+            var selectedValue = parent.Xrm.Page.getAttribute("new_visititem_t").getValue();
+
+			//20230119 調整HP僅出現 提醒醫師使用產品
+			var ownerid = parent.Xrm.Page.context.getUserId();
+			var fetchXml = [
+			"<fetch>",
+			"  <entity name='systemuser'>",
+			"    <attribute name='systemuserid'/>",
+			"    <filter>",
+			"      <condition attribute='systemuserid' operator='eq' value='", ownerid, "'/>",
+			"      <filter>",
+			"        <condition attribute='new_saleno' operator='like' value='HP%'/>",
+			"      </filter>",
+			"    </filter>",
+			"  </entity>",
+			"</fetch>"
+			].join("");
+			var getData = parent.XrmServiceToolkit.Soap.Fetch(fetchXml);
+			
+			if(getData.length > 0){
+				dropdownOptions = dropdownOptions.filter(function(f){ return f.value === "100000002"});
+			}
+			
+            $(dropdownOptions).each(function (i, e) {
+
+                var rText = $(this)[0].text;
+                var rvalue = $(this)[0].value;
+
+                var isChecked = false;
+                if (rText != '') {
+                    if (selectedValue != null && selectedValue.indexOf(rvalue) != -1)
+                        isChecked = true;
+                    var checkbox = "<input type='checkbox' name='r' /><span class='ms-crm-InlineEditLabelText' style='text-align:Left;'>" + rText + "</span>"
+                    $(checkbox)
+                        .attr("value", rvalue)
+                        .attr("checked", isChecked)
+                          .attr("id", "id" + rvalue)
+                        .click(function () {
+                            //To Set Picklist Select Values
+                            var selectedOption = parent.Xrm.Page.getAttribute("new_visititem_t").getValue();
+                            if (this.checked) {
+                                if (selectedOption == null)
+                                    selectedOption = rvalue;
+                                else
+                                    selectedOption = selectedOption + "," + rvalue
+                            }
+                            else {
+                                var tempSelected = rvalue + ",";
+                                if (selectedOption.indexOf(tempSelected) != -1)
+                                    selectedOption = selectedOption.replace(tempSelected, "");
+                                else
+                                    selectedOption = selectedOption.replace(rvalue, "");
+                            }
+                            parent.Xrm.Page.getAttribute("new_visititem_t").setValue(selectedOption);
+
+
+                            //To Set Picklist Select Text
+                            var selectedYear = parent.Xrm.Page.getAttribute("new_visititem_text").getValue();
+                            if (this.checked) {
+                                if (selectedYear == null)
+                                    selectedYear = rText;
+                                else
+                                    selectedYear = selectedYear + "," + rText
+                            }
+                            else {
+                                var tempSelectedtext = rText + ",";
+                                if (selectedYear.indexOf(tempSelectedtext) != -1)
+                                    selectedYear = selectedYear.replace(tempSelectedtext, "");
+                                else
+                                    selectedYear = selectedYear.replace(rText, "");
+                            }
+                            parent.Xrm.Page.getAttribute("new_visititem_text").setValue(selectedYear);
+
+                        })
+                        .appendTo(checkboxList);
+                }
+            });
+        }
+    </script> 
+    <meta charset="utf-8">
+<meta><meta><meta><meta><meta><meta><meta><meta></head><body style="word-wrap: break-word;">
+    <div id="checkboxList">
+     
+    <input type="checkbox" name="r" value="100000002" id="id100000002" style=""><span class="ms-crm-InlineEditLabelText" style="text-align:Left;" value="100000002" id="id100000002">產品說明</span></div>
+
+</body></html>
