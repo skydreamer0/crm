@@ -83,7 +83,7 @@ KNOWN_HOSPITALS = {
     "義大", "奇美", "成大", "高醫", "中山", "署立", "聯合", "仁愛",
     "台北慈濟", "花蓮慈濟", "大林慈濟", "台中慈濟",
     "新光醫院", "耕莘醫院", "台大醫院", "榮總醫院",
-    "Cardinal Tien", "Shin Kong", "Tzu Chi",
+    "Cardinal Tien", "Shin Kong", "Tzu Chi", "永耕",
 }
 
 # Pre-compiled: matches 2-4 consecutive CJK characters (typical Chinese name)
@@ -126,8 +126,9 @@ def _identify_department(token: str) -> Optional[dict]:
         return hit
 
     # Fuzzy: check if the token *contains* a known alias (e.g. "泌尿外科URO")
+    # Also check if a known alias *contains* the token (e.g. "家醫" → "家醫科")
     for key, val in DEPARTMENT_MAP.items():
-        if len(key) >= 2 and key in normed:
+        if len(key) >= 2 and (key in normed or (len(normed) >= 2 and normed in key)):
             return val
 
     return None
@@ -147,7 +148,7 @@ def _is_chinese_name(token: str) -> bool:
 
 def parse_single_entry(line: str) -> Optional[VisitEntry]:
     """
-    Parse a single line like '慈濟/URO/吳書雨/B'.
+    Parse a single line like '慈濟/URO/吳書雨/B' or '永耕/URO/楊弘如/A08:30'.
 
     Returns a VisitEntry with customer_name and department info,
     or None if the line is blank / unparseable.
@@ -155,6 +156,15 @@ def parse_single_entry(line: str) -> Optional[VisitEntry]:
     line = line.strip()
     if not line:
         return None
+
+    # 過濾掉可能是表格標題列的文字
+    if "醫院" in line and ("科別" in line or "客戶" in line):
+        logger.info(f"  ⏭️ 忽略標題列: {line}")
+        return None
+
+    # 清理時間標記 (例如 08:30, 14:00)
+    # 把類似 HH:MM 的格式直接移除
+    line = re.sub(r"\d{1,2}:\d{2}", "", line)
 
     # Split by common delimiters
     tokens = re.split(r"[/／、\t]+", line)

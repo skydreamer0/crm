@@ -146,3 +146,16 @@ class TestEdgeCases:
         raw = "慈濟/URO/吳書雨/B"
         e = parse_single_entry(raw)
         assert e.raw_line == raw
+
+    def test_fm_abbreviation(self):
+        """Bug fix: '家醫' abbreviation should map to FM department."""
+        e = parse_single_entry("新光/家醫/陳仲達/C")
+        assert e.customer_name == "陳仲達"
+        assert e.department_code == "FM"
+        assert e.department_name_zh == "家醫科"
+
+    def test_reverse_fuzzy_department(self):
+        """Token shorter than alias should still match (bidirectional fuzzy)."""
+        e = parse_single_entry("馬偕/家醫/王小明/A")
+        assert e.department_code == "FM"
+        assert e.matched_products == ["oxb", "uri"]

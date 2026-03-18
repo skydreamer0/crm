@@ -45,8 +45,8 @@ crm:
     product_input: "div#new_product"
     product_dropdown_menu: "ul#new_product_i_IMenu"
 
-    # 拜訪內容
-    visit_item: "div#new_visititem, div#new_visititem_c"
+    # 拜訪內容 (實際 DOM id 為 new_callnotes)
+    visit_item: "div#new_callnotes, div#new_callnotes_c, div#new_callnotes_d"
 
     # 拜訪目的
     visit_purpose: "div#new_visitpurpose"
