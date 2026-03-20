@@ -1,9 +1,20 @@
 """
-CRM 操作介面 — Flask Web Server
+CRM 操作介面 — Flask Web Server (app.py)
+=============================================
 
 提供 Web GUI 供用戶貼入待訪名單，即時預覽解析結果、產品匹配，
 並可一鍵觸發 CRM 自動化流程。
+
+主要路由:
+  - GET  /           → 主頁面 (index.html)
+  - POST /api/parse   → 解析待訪名單文字，回傳結構化資料
+  - POST /api/execute  → 在背景執行緝程啟動 CRM 自動化
+  - GET  /api/status   → 查詢自動化執行進度
+
+啟動方式:
+  python src/app.py   → 開在 http://127.0.0.1:5050
 """
+# === 標準庫 ===
 import sys
 import os
 import json
@@ -11,9 +22,10 @@ import random
 import asyncio
 import threading
 
+# === 第三方套件 ===
 from flask import Flask, render_template, request, jsonify
 
-# Ensure src/ is importable
+# === 本地模組 ===
 sys.path.insert(0, os.path.dirname(__file__))
 
 from visit_list_parser import (

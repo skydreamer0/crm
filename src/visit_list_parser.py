@@ -1,23 +1,29 @@
 """
 待訪名單解析器 — Visit List Parser
+===================================
 
 解析格式如:
     慈濟/URO/吳書雨/B
     耕莘/泌尿科/王小明/A
 
 擷取:
-    1. 客戶姓名 (最重要)
-    2. 科別 (用於產品匹配)
+    1. 客戶姓名 (最重要，用於 CRM 表單的拜訪對象欄位)
+    2. 科別 (用於自動匹配應該展示的產品)
 
 忽略: 醫院名稱、客戶等級
+
+本模組被 app.py 與 create_appointments.py 共同使用。
 """
+# === 標準庫 ===
 import os
+import random
 import re
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+# === 第三方套件 ===
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -259,8 +265,6 @@ def select_products(entry: VisitEntry, count: int = 2) -> list[str]:
     """
     return entry.matched_products[:count]
 
-
-import random
 
 def get_product_info(product_code: str) -> dict:
     """

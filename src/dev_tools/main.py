@@ -28,8 +28,9 @@ async def run_crm_task():
 
     async with async_playwright() as p:
         logger.info("🚀 啟動瀏覽器...")
-        # 使用 headless=False 可以讓您看到瀏覽器操作，測試穩定後再改回 True
-        browser = await p.chromium.launch(headless=False)
+        # 改為讀取環境變數設定，預設為背景執行
+        headless_mode = os.getenv("HEADLESS", "true").lower() == "true"
+        browser = await p.chromium.launch(headless=headless_mode)
         
         # 關鍵：設定 http_credentials 處理 Basic Auth
         context = await browser.new_context(
