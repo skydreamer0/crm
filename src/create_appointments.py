@@ -413,13 +413,16 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
             prod_iframe_element = await product_popup.wait_for_selector(SEL['common']['content_iframe'], timeout=15000)
             prod_frame = await prod_iframe_element.content_frame()
             await product_popup.wait_for_timeout(TIMING['iframe_ready'])
+            # CRM 開啟新視窗較慢，多等一點時間讓輸入框與事件綁定完成
+            await product_popup.wait_for_timeout(2500)
 
             logger.info("      輸入產品編號搜尋...")
             prod_input = prod_frame.locator(SEL['product']['product_input'])
             await prod_input.click()
             await product_popup.wait_for_timeout(TIMING['after_click'])
             await product_popup.keyboard.type(product_id)
-            await product_popup.wait_for_timeout(TIMING['after_type'])
+            # 等待自動完成的後端查詢稍微跑一下再按 Enter
+            await product_popup.wait_for_timeout(1000)
             await product_popup.keyboard.press("Enter")
 
             # 等待下拉選單出現 (smart wait)
@@ -485,11 +488,16 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
             try:
                 # 嚴格使用按鈕制
                 save_btn = await product_popup.wait_for_selector(SEL['common']['save_button'], state="attached", timeout=15000)
-                await save_btn.click()
+                # 等待背景的 loading 遮罩消失，避免 Click 被攔截
+                try:
+                    await product_popup.wait_for_selector("div#InlineDialog_Background", state="hidden", timeout=5000)
+                except Exception:
+                    pass
+                await save_btn.click(force=True)
                 
                 try:
                     # 等待一下，如果視窗被 CRM 自己關了，這裡會噴例外，我們抓接即可
-                    await product_popup.wait_for_timeout(1500)
+                    await product_popup.wait_for_timeout(TIMING['after_save'])
                     
                     # 手動關閉視窗 (因為是點儲存而不是儲存並關閉)
                     if not product_popup.is_closed():
@@ -624,20 +632,9 @@ async def create_single_appointment(page, context, period: str, index: int, entr
         logger.info("  ✅ Popup 已自動關閉")
 
     # === 導航回日報頁面 ===
-    await page.wait_for_timeout(500)
-    if daily_report_url:
-        logger.info(f"  🔄 導航回日報頁面...")
-        await page.goto(daily_report_url, wait_until="domcontentloaded")
-    else:
-        await page.reload(wait_until="networkidle")
-    await page.wait_for_timeout(1500)
-
-    # 等待 content iframe 載入
-    try:
-        await page.wait_for_selector(SEL['common']['content_iframe'], timeout=15000)
-        await page.wait_for_timeout(1000)
-    except Exception:
-        logger.warning("  ⚠️ 等待 content iframe 超時")
+    # 取消強制導航回日報頁面，因為每次建立約會都是開啟 Popup，主頁面並未改變。
+    # 依賴下一筆的 find_add_activity_button 防呆機制去判斷是否需要重新載入。
+    await page.wait_for_timeout(TIMING['page_transition'])
 
     logger.info(f"✅ 第 {index} 筆約會記錄建立完成\n")
 
