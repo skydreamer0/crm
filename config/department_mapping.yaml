@@ -19,4 +19,4 @@ departments:
   FM:
     name_zh: 家醫科
     aliases: [家醫科, 家醫, 家庭醫學科, Family Medicine, fm]
-    products: [oxb, uri]
+    products: [uri, oxb]

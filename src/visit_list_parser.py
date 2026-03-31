@@ -90,6 +90,8 @@ KNOWN_HOSPITALS = {
     "台北慈濟", "花蓮慈濟", "大林慈濟", "台中慈濟",
     "新光醫院", "耕莘醫院", "台大醫院", "榮總醫院",
     "Cardinal Tien", "Shin Kong", "Tzu Chi", "永耕",
+    # 分院 / 院區
+    "耕莘安康", "安康", "安康院區", "耕莘安康院區",
 }
 
 # Pre-compiled: matches 2-4 consecutive CJK characters (typical Chinese name)
@@ -139,6 +141,15 @@ def _identify_department(token: str) -> Optional[dict]:
 
     return None
 
+# 常見醫學科別關鍵字 (即使未收錄在 department_mapping 裡，也不應被當成姓名)
+_DEPT_KEYWORDS = {
+    "科", "內科", "外科", "神內", "神外", "心內", "心外",
+    "胸腔", "腎臟", "感染", "腫瘤", "血液", "風濕", "復健",
+    "放射", "急診", "麻醉", "骨科", "皮膚", "眼科", "耳鼻",
+    "牙科", "精神", "整形", "肝膽", "腸胃", "直腸", "胃腸",
+    "新陳代謝", "內分泌", "神經", "心臟", "胸外", "一般外",
+}
+
 
 def _is_chinese_name(token: str) -> bool:
     """Heuristic: a 2-4 CJK character string that isn't a hospital or dept."""
@@ -148,6 +159,12 @@ def _is_chinese_name(token: str) -> bool:
     if normed in KNOWN_HOSPITALS:
         return False
     if DEPARTMENT_MAP.get(normed):
+        return False
+    # 排除看似科別名稱的 token (例如 "神內", "骨科", "心內")
+    if normed in _DEPT_KEYWORDS:
+        return False
+    # 包含「科」的 token 幾乎都是科別而非人名
+    if "科" in normed:
         return False
     return True
 
@@ -221,6 +238,12 @@ def parse_single_entry(line: str) -> Optional[VisitEntry]:
         entry.department_code = dept_info["code"]
         entry.department_name_zh = dept_info["name_zh"]
         entry.matched_products = list(dept_info["products"])
+    else:
+        # 未知科別 (神內、其他未建檔科別等) → 預設帶入 uri + oxb
+        entry.department_code = "OTHER"
+        entry.department_name_zh = "其他"
+        entry.matched_products = ["uri", "oxb"]
+        logger.info("  ℹ️ 未匹配到已知科別，預設帶入產品: [uri, oxb]")
 
     return entry
 
