@@ -143,13 +143,13 @@ async def create_daily_report(page, base_url):
     await page.keyboard.press("Tab")
     await page.wait_for_timeout(500)
     
-    # 加上 delay，模擬真人輸入，避免 CRM 欄位異常
-    await page.keyboard.type("09:00", delay=TIMING['type_delay'])
+    # 直接貼上，模擬高速輸入
+    await page.keyboard.insert_text("09:00")
     logger.info("已填入上班時間 09:00")
 
     await page.keyboard.press("Tab")
     await page.wait_for_timeout(500)
-    await page.keyboard.type("18:00", delay=TIMING['type_delay'])
+    await page.keyboard.insert_text("18:00")
     logger.info("已填入下班時間 18:00")
     
     # 離開欄位，觸發 CRM 系統的 onchange 事件，確保資料被正確寫入暫存
@@ -157,19 +157,29 @@ async def create_daily_report(page, base_url):
     await page.wait_for_timeout(500)
 
     # 儲存
-    save_button = await page.query_selector(SEL['common']['save_button'])
-    if not save_button:
-        raise Exception("找不到儲存按鈕!")
-
-    logger.info("點擊儲存...")
-    await save_button.click()
-
-    # 等待 CRM 儲存完成並重新載入頁面 (這步至關重要，原本只等 80ms 導致後續全滅)
+    logger.info("準備儲存日報...")
     try:
-        await page.wait_for_load_state("domcontentloaded", timeout=15000)
+        # 尋找畫面上可見且為作用中的儲存按鈕
+        save_btn = await page.wait_for_selector(
+            SEL['common']['save_button'], state="visible", timeout=5000
+        )
+        if save_btn:
+            await save_btn.click(force=True)
+            logger.info("已點擊主頁面儲存按鈕")
+        else:
+            raise Exception("No visible save button")
+    except Exception:
+        logger.warning("找不到可見的儲存按鈕，改用快捷鍵 Ctrl+S")
+        await page.keyboard.press("Control+s")
+
+    # 等待 CRM 儲存完成並重新載入頁面 (給充足時間讓系統產生對應的子表單)
+    try:
+        await page.wait_for_load_state("networkidle", timeout=10000)
     except Exception:
         pass
-    await page.wait_for_timeout(2000)
+    
+    # 強制等候 3 到 4 秒以確保 subgrid 完全產生
+    await page.wait_for_timeout(4000)
     logger.info("✅ 日報儲存完成")
 
 
@@ -256,8 +266,8 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None):
                     await popup_page.keyboard.press("Backspace")
                     await popup_page.wait_for_timeout(800)
 
-                # 輸入客戶姓名，加上 delay 模擬真人打字，避免 CRM 吃字
-                await popup_page.keyboard.type(customer_name, delay=TIMING['type_delay'])
+                # 直接貼上客戶姓名，提升速度
+                await popup_page.keyboard.insert_text(customer_name)
                 # 給更長的時間讓 CRM 的 onChange 或 keyup 事件去拉取資料
                 await popup_page.wait_for_timeout(1500 + attempt * 1000)
 
@@ -342,7 +352,7 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None):
                 if desc_field:
                     await desc_field.click()
                     await popup_page.wait_for_timeout(TIMING['after_click'])
-                    await popup_page.keyboard.type(description, delay=TIMING['type_delay'])
+                    await popup_page.keyboard.insert_text(description)
                     logger.info(f"  ✅ 已填寫描述: {description[:15]}...")
                     await popup_page.wait_for_timeout(TIMING['after_type'])
                 else:
@@ -393,14 +403,14 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None):
     # === 5. 儲存約會記錄 ===
     logger.info("  儲存約會記錄...")
     try:
-        save_btn = await popup_page.wait_for_selector(SEL['common']['save_button'], timeout=5000)
-        await save_btn.click()
+        save_btn = await popup_page.wait_for_selector(SEL['common']['save_button'], state="visible", timeout=5000)
+        await save_btn.click(force=True)
         await popup_page.wait_for_timeout(TIMING['after_save'] + 1500)
         logger.info("  ✅ 約會記錄儲存完成")
     except Exception:
         logger.warning("  ⚠️ 找不到儲存按鈕或發生異常，嘗試 Ctrl+S")
         await popup_page.keyboard.press("Control+s")
-        await popup_page.wait_for_timeout(TIMING['after_save'] + 1500)
+        await popup_page.wait_for_timeout(TIMING['after_save'] + 3000)
 
     # 這裡不再執行「儲存後關閉」，保留 popup 開啟狀態，交由後續的產品填寫步驟處理。
 
@@ -465,7 +475,7 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
                     await product_popup.keyboard.press("Backspace")
                     await product_popup.wait_for_timeout(500)
 
-                await product_popup.keyboard.type(product_id, delay=TIMING['type_delay'])
+                await product_popup.keyboard.insert_text(product_id)
                 # 等待自動完成的後端查詢稍微跑一下再按 Enter
                 await product_popup.wait_for_timeout(1000 + attempt * 1000)
                 await product_popup.keyboard.press("Enter")
@@ -498,7 +508,7 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
                 await product_popup.wait_for_timeout(TIMING['after_click'])
 
                 purpose_text = random.choice(["上量", "了解需求"])
-                await product_popup.keyboard.type(purpose_text, delay=TIMING['type_delay'])
+                await product_popup.keyboard.insert_text(purpose_text)
                 await product_popup.wait_for_timeout(TIMING['after_type'])
 
                 # Tab 離開讓 CRM 確認
@@ -540,18 +550,22 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
             # 4. 儲存並關閉產品 Popup
             logger.info("      儲存該產品...")
             try:
-                # 嚴格使用按鈕制
-                save_btn = await product_popup.wait_for_selector(SEL['common']['save_button'], state="attached", timeout=15000)
-                # 等待背景的 loading 遮罩消失，避免 Click 被攔截
                 try:
-                    await product_popup.wait_for_selector("div#InlineDialog_Background", state="hidden", timeout=5000)
+                    # 嚴格使用按鈕制
+                    save_btn = await product_popup.wait_for_selector(SEL['common']['save_button'], state="visible", timeout=5000)
+                    # 等待背景的 loading 遮罩消失，避免 Click 被攔截
+                    try:
+                        await product_popup.wait_for_selector("div#InlineDialog_Background", state="hidden", timeout=3000)
+                    except Exception:
+                        pass
+                    await save_btn.click(force=True)
                 except Exception:
-                    pass
-                await save_btn.click(force=True)
+                    logger.warning("      ⚠️ 找不到可見儲存按鈕，改用 Ctrl+S")
+                    await product_popup.keyboard.press("Control+s")
                 
                 try:
                     # 等待一下，如果視窗被 CRM 自己關了，這裡會噴例外，我們抓接即可
-                    await product_popup.wait_for_timeout(TIMING['after_save'])
+                    await product_popup.wait_for_timeout(TIMING['after_save'] + 2000)
                     
                     # 手動關閉視窗 (因為是點儲存而不是儲存並關閉)
                     if not product_popup.is_closed():
