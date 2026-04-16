@@ -153,7 +153,7 @@ def api_execute():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            loop.run_until_complete(run_automation(entries, progress_callback=progress_cb))
+            loop.run_until_complete(run_automation(entries, run_date=data.get("date"), progress_callback=progress_cb))
             _automation_state["result"] = "success"
         except Exception as e:
             _automation_state["error"] = str(e)
@@ -198,6 +198,6 @@ if __name__ == "__main__":
     # Open browser after a short delay
     _threading.Timer(1.2, open_browser).start()
 
-    print(f"\n🚀 CRM 操作介面已啟動: http://127.0.0.1:{port}\n")
+    print(f"\nCRM 操作介面已啟動: http://127.0.0.1:{port}\n")
     app.run(host="127.0.0.1", port=port, debug=True, use_reloader=False)
 

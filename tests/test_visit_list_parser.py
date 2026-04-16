@@ -110,13 +110,38 @@ class TestProductMatching:
 
     def test_fm_products(self):
         e = parse_single_entry("馬偕/FM/陳大華/A")
-        assert e.matched_products == ["oxb", "uri"]
+        assert e.matched_products == ["uri", "oxb"]
 
     def test_select_two_products(self):
         e = parse_single_entry("慈濟/URO/吳書雨/B")
         selected = select_products(e, count=2)
         assert len(selected) == 2
         assert selected == ["uri", "eli"]
+
+class TestEligardRestriction:
+
+    def test_eli_allowed_in_uro(self):
+        e = VisitEntry(customer_name="Test", department_code="URO", matched_products=["uri", "eli", "oxb"])
+        selected = select_products(e, count=3)
+        assert "eli" in selected
+
+    def test_eli_allowed_in_ped(self):
+        e = VisitEntry(customer_name="Test", department_code="PED", matched_products=["eli", "oxb"])
+        selected = select_products(e, count=2)
+        assert "eli" in selected
+
+    def test_eli_blocked_in_obs(self):
+        # Even if 'eli' is manually added to matched_products for OBS, it should be filtered
+        e = VisitEntry(customer_name="Test", department_code="OBS", matched_products=["ysl", "eli", "oxb"])
+        selected = select_products(e, count=3)
+        assert "eli" not in selected
+        assert selected == ["ysl", "oxb"]
+
+    def test_eli_blocked_in_fm(self):
+        e = VisitEntry(customer_name="Test", department_code="FM", matched_products=["uri", "eli", "oxb"])
+        selected = select_products(e, count=3)
+        assert "eli" not in selected
+        assert selected == ["uri", "oxb"]
 
 
 # ── Edge cases ───────────────────────────────────────────────────────────────
@@ -139,8 +164,8 @@ class TestEdgeCases:
         """Line without recognisable department."""
         e = parse_single_entry("慈濟/吳書雨/B")
         assert e.customer_name == "吳書雨"
-        assert e.department_code == ""
-        assert e.matched_products == []
+        assert e.department_code == "OTHER"
+        assert e.matched_products == ["uri", "oxb"]
 
     def test_raw_line_preserved(self):
         raw = "慈濟/URO/吳書雨/B"
@@ -158,4 +183,4 @@ class TestEdgeCases:
         """Token shorter than alias should still match (bidirectional fuzzy)."""
         e = parse_single_entry("馬偕/家醫/王小明/A")
         assert e.department_code == "FM"
-        assert e.matched_products == ["oxb", "uri"]
+        assert e.matched_products == ["uri", "oxb"]

@@ -605,6 +605,15 @@
         <section class="input-section">
             <div class="section-label">
                 <span class="section-label__dot"></span>
+                執行設定
+            </div>
+            <div style="margin-bottom: 24px;">
+                <label style="font-size: 13px; color: var(--text-secondary); margin-right: 12px;">欲填寫日期:</label>
+                <input type="date" id="runDate" style="background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text-primary); font-family: inherit; font-size: 14px; outline: none; transition: var(--transition);">
+            </div>
+
+            <div class="section-label">
+                <span class="section-label__dot"></span>
                 待訪名單
             </div>
             <div class="textarea-wrapper">
@@ -675,6 +684,12 @@
         let parsedEntries = [];
 
         /* ─── API Calls ───────────────────────────────────────────── */
+        document.addEventListener('DOMContentLoaded', () => {
+            // 預設為今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('runDate').value = today;
+        });
+
         async function doParse() {
             const text = document.getElementById('visitInput').value.trim();
             if (!text) {
@@ -721,10 +736,12 @@
             document.getElementById('btnParse').disabled = true;
 
             try {
+                const text = document.getElementById('visitInput').value.trim();
+                const date = document.getElementById('runDate').value;
                 const res = await fetch('/api/execute', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: document.getElementById('visitInput').value.trim() }),
+                    body: JSON.stringify({ text, date }),
                 });
 
                 const data = await res.json();

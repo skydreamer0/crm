@@ -285,8 +285,15 @@ def select_products(entry: VisitEntry, count: int = 2) -> list[str]:
     """
     From an entry's matched_products, select up to `count` products.
     Returns product codes (e.g. ['uri', 'eli']).
+
+    Hard Rule: ELIGARD (eli) only allowed for URO (Urology) and PED (Pediatrics).
     """
-    return entry.matched_products[:count]
+    filtered = []
+    for p in entry.matched_products:
+        if p == "eli" and entry.department_code not in ["URO", "PED"]:
+            continue
+        filtered.append(p)
+    return filtered[:count]
 
 
 def get_product_info(product_code: str) -> dict:

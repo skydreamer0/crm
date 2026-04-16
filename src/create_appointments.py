@@ -82,6 +82,53 @@ TIMING = {
     "popup_ready":     800,   # popup 加載後的緩衝 (500→800)
 }
 
+async def reliable_save(target_page, label: str = "記錄", timeout: int = 15000):
+    """
+    可靠的儲存操作：先嘗試按鈕，再嘗試 Ctrl+S（確保焦點在正確的視窗上）。
+
+    Args:
+        target_page: Playwright page 物件（主頁面或 popup）
+        label: 儲存操作的描述（用於日誌）
+        timeout: 等待儲存按鈕出現的最長時間 (ms)
+    """
+    saved = False
+
+    # 嘗試 1: 點擊可見的儲存按鈕
+    try:
+        save_btn = await target_page.wait_for_selector(
+            SEL['common']['save_button'], state="visible", timeout=timeout
+        )
+        # 等待 loading 遮罩消失
+        try:
+            await target_page.wait_for_selector(
+                "div#InlineDialog_Background", state="hidden", timeout=3000
+            )
+        except Exception:
+            pass
+        await save_btn.click(force=True)
+        logger.info(f"  ✅ 已點擊{label}儲存按鈕")
+        saved = True
+    except Exception:
+        logger.warning(f"  ⚠️ 找不到{label}儲存按鈕 (等待 {timeout}ms)，改用 Ctrl+S")
+
+    # 嘗試 2: Ctrl+S — 先確保焦點在目標視窗
+    if not saved:
+        try:
+            await target_page.bring_to_front()
+        except Exception:
+            pass
+        # 點擊表單主體確保焦點
+        try:
+            await target_page.click("body", timeout=2000)
+        except Exception:
+            pass
+        await target_page.keyboard.press("Control+s")
+        logger.info(f"  ✅ 已執行 Ctrl+S ({label})")
+
+    # 等待儲存完成
+    await target_page.wait_for_timeout(TIMING['after_save'] + 1500)
+
+
 def send_line_notify(message: str):
     """傳送 Line Notify 通知 (若環境變數有設定 LINE_NOTIFY_TOKEN)"""
     token = os.getenv("LINE_NOTIFY_TOKEN")
@@ -115,8 +162,8 @@ async def login(page, base_url):
     logger.info("✅ 登入成功")
 
 
-async def create_daily_report(page, base_url):
-    """新增日報並填寫上下班時間"""
+async def create_daily_report(page, base_url, run_date: str = None):
+    """新增日報並填寫上下班時間與自訂日期"""
     # 確保 base_url 只取到 .com.tw 或 .com，避免跟後面的 /SYNCRM/main.aspx 疊加
     host_url = base_url.split('/SYNCRM')[0] if '/SYNCRM' in base_url else base_url.rstrip('/')
     new_report_url = f"{host_url}/SYNCRM/main.aspx?etn=new_dailyreport&pagetype=entityrecord"
@@ -138,6 +185,15 @@ async def create_daily_report(page, base_url):
     else:
         await frame.click("input[type='text']")
 
+    if run_date:
+        target_date = run_date.replace('-', '/')
+        logger.info(f"填寫自訂日期: {target_date}")
+        await page.keyboard.press("Control+a")
+        await page.keyboard.press("Backspace")
+        await page.wait_for_timeout(200)
+        await page.keyboard.insert_text(target_date)
+        await page.wait_for_timeout(300)
+
     await page.keyboard.press("Tab")
     await page.wait_for_timeout(TIMING['key_press'] + 300)
     await page.keyboard.press("Tab")
@@ -158,19 +214,7 @@ async def create_daily_report(page, base_url):
 
     # 儲存
     logger.info("準備儲存日報...")
-    try:
-        # 尋找畫面上可見且為作用中的儲存按鈕
-        save_btn = await page.wait_for_selector(
-            SEL['common']['save_button'], state="visible", timeout=5000
-        )
-        if save_btn:
-            await save_btn.click(force=True)
-            logger.info("已點擊主頁面儲存按鈕")
-        else:
-            raise Exception("No visible save button")
-    except Exception:
-        logger.warning("找不到可見的儲存按鈕，改用快捷鍵 Ctrl+S")
-        await page.keyboard.press("Control+s")
+    await reliable_save(page, label="日報", timeout=15000)
 
     # 等待 CRM 儲存完成並重新載入頁面 (給充足時間讓系統產生對應的子表單)
     try:
@@ -246,7 +290,138 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None):
     
     await popup_page.wait_for_timeout(TIMING['iframe_ready'])
 
-    # === 1. 拜訪對象 (new_abc): 輸入客戶姓名 ===
+    # (拜訪對象移至步驟 4 填寫)
+
+    # === 2. 實際拜訪時段 (new_actualvisitperiod): 選擇上午/下午 ===
+    logger.info(f"  選擇實際拜訪時段: {period}...")
+    period_selected = False
+    for period_attempt in range(3):
+        try:
+            if period_attempt > 0:
+                logger.warning(f"  ⚠️ 重試選擇時段 (第 {period_attempt} 次)...")
+                await popup_page.wait_for_timeout(1000)
+
+            period_field = await popup_frame.wait_for_selector(
+                SEL['appointment']['period_div'], timeout=10000
+            )
+            await period_field.click()
+            await popup_page.wait_for_timeout(TIMING['after_click'] + 200)
+
+            # 等待 select 元素出現 (明確等待，避免 JS 尚未加載)
+            period_select = await popup_frame.wait_for_selector(
+                SEL['appointment']['period_select'], state="attached", timeout=5000
+            )
+            if period_select:
+                options = await popup_frame.query_selector_all(
+                    SEL['appointment']['period_options']
+                )
+                for opt in options:
+                    text = await opt.text_content()
+                    if period in text:
+                        value = await opt.get_attribute("value")
+                        await period_select.select_option(value=value)
+                        logger.info(f"  ✅ 已選擇: {text} (value={value})")
+                        period_selected = True
+                        break
+            if not period_selected:
+                logger.info("  嘗試用鍵盤選擇...")
+                await popup_page.keyboard.press("Enter")
+                await popup_page.wait_for_timeout(TIMING['dropdown'])
+                period_selected = True  # 假設鍵盤操作成功
+
+            await popup_page.wait_for_timeout(TIMING['key_press'])
+            if period_selected:
+                break
+        except Exception as e:
+            logger.warning(f"  ⚠️ 實際拜訪時段選擇異常 (嘗試 {period_attempt+1}): {e}")
+
+    if not period_selected:
+        logger.error("  ❌ 無法選取實際拜訪時段 (已重試 3 次)，此筆記錄儲存後可能失敗")
+
+    # === 3. 拜訪描述 (new_visit_description): 填寫隨機產品描述 ===
+    logger.info("  填寫拜訪描述...")
+    try:
+        # 選取一項產品來產生描述
+        if entry and entry.matched_products:
+            # 第一個優先配對的產品
+            main_product = entry.matched_products[0]
+            description = get_random_description(main_product)
+            
+            if description:
+                desc_field = await popup_frame.wait_for_selector(
+                    SEL['appointment']['visit_description'], timeout=5000
+                )
+                if desc_field:
+                    await desc_field.click()
+                    await popup_page.wait_for_timeout(TIMING['after_click'])
+                    await popup_page.keyboard.insert_text(description)
+                    logger.info(f"  ✅ 已填寫描述: {description[:15]}...")
+                    await popup_page.wait_for_timeout(TIMING['after_type'])
+                else:
+                    logger.warning("  ⚠️ 找不到拜訪描述欄位")
+            else:
+                logger.info("  ⏭️ 產品無可用描述，跳過填寫")
+        else:
+            logger.info("  ⏭️ 無產品資料，跳過填寫描述")
+    except Exception as e:
+        logger.warning(f"  ⚠️ 拜訪描述填寫異常: {e}")
+
+    # === 4. 完成事項: 勾選「產品說明」===
+    logger.info("  勾選完成事項: 產品說明...")
+    checkbox_done = False
+    for cb_attempt in range(2):
+        try:
+            if cb_attempt > 0:
+                logger.info("  重試載入 checkbox iframe...")
+                await popup_page.wait_for_timeout(1500)
+
+            checkbox_iframe = await popup_frame.wait_for_selector(
+                SEL['appointment']['checkbox_iframe'], timeout=10000
+            )
+            checkbox_frame = await checkbox_iframe.content_frame()
+
+            if checkbox_frame:
+                # 等待 iframe 內容實際載入完成
+                await popup_page.wait_for_timeout(TIMING['iframe_ready'] + 500)
+                try:
+                    await checkbox_frame.wait_for_load_state("domcontentloaded", timeout=5000)
+                except Exception:
+                    pass
+
+                checkbox = await checkbox_frame.query_selector(
+                    SEL['appointment']['checkbox_product_intro']
+                )
+                if checkbox:
+                    is_checked = await checkbox.is_checked()
+                    if not is_checked:
+                        await checkbox.click()
+                        logger.info("  ✅ 已勾選「產品說明」")
+                    else:
+                        logger.info("  ✅ 「產品說明」已經勾選")
+                    checkbox_done = True
+                    break
+                else:
+                    checkbox = await checkbox_frame.query_selector(
+                        SEL['appointment']['checkbox_product_intro_fallback']
+                    )
+                    if checkbox:
+                        await checkbox.click()
+                        logger.info("  ✅ 已勾選「產品說明」(備用選擇器)")
+                        checkbox_done = True
+                        break
+                    else:
+                        logger.warning(f"  ⚠️ 找不到產品說明 checkbox (嘗試 {cb_attempt+1})")
+            else:
+                logger.warning("  ⚠️ 無法進入 WebResource_checkbox iframe")
+        except Exception as e:
+            logger.warning(f"  ⚠️ 完成事項勾選異常 (嘗試 {cb_attempt+1}): {e}")
+
+    if not checkbox_done:
+        logger.warning("  ⚠️ 產品說明 checkbox 最終未勾選，繼續執行")
+
+
+
+    # === 4. 拜訪對象 (new_abc): 輸入客戶姓名 (移至最後填寫) ===
     logger.info(f"  填寫拜訪對象: {customer_name}...")
     try:
         # 等待欄位出現並可點擊
@@ -300,117 +475,9 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None):
     except Exception as e:
         logger.warning(f"  ⚠️ 拜訪對象填寫異常: {e}")
 
-    # === 2. 實際拜訪時段 (new_actualvisitperiod): 選擇上午/下午 ===
-    logger.info(f"  選擇實際拜訪時段: {period}...")
-    try:
-        period_field = await popup_frame.wait_for_selector(
-            SEL['appointment']['period_div'], timeout=10000
-        )
-        await period_field.click()
-        await popup_page.wait_for_timeout(TIMING['after_click'])
-
-        # 找到下拉選單 select (原始可運作邏輯)
-        period_select = await popup_frame.query_selector(
-            SEL['appointment']['period_select']
-        )
-        if period_select:
-            options = await popup_frame.query_selector_all(
-                SEL['appointment']['period_options']
-            )
-            for opt in options:
-                text = await opt.text_content()
-                if period in text:
-                    value = await opt.get_attribute("value")
-                    await period_select.select_option(value=value)
-                    logger.info(f"  ✅ 已選擇: {text} (value={value})")
-                    break
-            else:
-                logger.info("  嘗試用鍵盤選擇...")
-                await popup_page.keyboard.press("Enter")
-                await popup_page.wait_for_timeout(TIMING['dropdown'])
-        else:
-            await popup_page.keyboard.press("Enter")
-            await popup_page.wait_for_timeout(TIMING['dropdown'])
-
-        await popup_page.wait_for_timeout(TIMING['key_press'])
-    except Exception as e:
-        logger.warning(f"  ⚠️ 實際拜訪時段選擇異常: {e}")
-
-    # === 3. 拜訪描述 (new_visit_description): 填寫隨機產品描述 ===
-    logger.info("  填寫拜訪描述...")
-    try:
-        # 選取一項產品來產生描述
-        if entry and entry.matched_products:
-            # 第一個優先配對的產品
-            main_product = entry.matched_products[0]
-            description = get_random_description(main_product)
-            
-            if description:
-                desc_field = await popup_frame.wait_for_selector(
-                    SEL['appointment']['visit_description'], timeout=5000
-                )
-                if desc_field:
-                    await desc_field.click()
-                    await popup_page.wait_for_timeout(TIMING['after_click'])
-                    await popup_page.keyboard.insert_text(description)
-                    logger.info(f"  ✅ 已填寫描述: {description[:15]}...")
-                    await popup_page.wait_for_timeout(TIMING['after_type'])
-                else:
-                    logger.warning("  ⚠️ 找不到拜訪描述欄位")
-            else:
-                logger.info("  ⏭️ 產品無可用描述，跳過填寫")
-        else:
-            logger.info("  ⏭️ 無產品資料，跳過填寫描述")
-    except Exception as e:
-        logger.warning(f"  ⚠️ 拜訪描述填寫異常: {e}")
-
-    # === 4. 完成事項: 勾選「產品說明」===
-    logger.info("  勾選完成事項: 產品說明...")
-    try:
-        checkbox_iframe = await popup_frame.wait_for_selector(
-            SEL['appointment']['checkbox_iframe'], timeout=10000
-        )
-        checkbox_frame = await checkbox_iframe.content_frame()
-
-        if checkbox_frame:
-            await popup_page.wait_for_timeout(TIMING['iframe_ready'])
-            checkbox = await checkbox_frame.query_selector(
-                SEL['appointment']['checkbox_product_intro']
-            )
-            if checkbox:
-                is_checked = await checkbox.is_checked()
-                if not is_checked:
-                    await checkbox.click()
-                    logger.info("  ✅ 已勾選「產品說明」")
-                else:
-                    logger.info("  ✅ 「產品說明」已經勾選")
-            else:
-                checkbox = await checkbox_frame.query_selector(
-                    SEL['appointment']['checkbox_product_intro_fallback']
-                )
-                if checkbox:
-                    await checkbox.click()
-                    logger.info("  ✅ 已勾選「產品說明」(備用選擇器)")
-                else:
-                    logger.warning("  ⚠️ 找不到產品說明 checkbox")
-        else:
-            logger.warning("  ⚠️ 無法進入 WebResource_checkbox iframe")
-    except Exception as e:
-        logger.warning(f"  ⚠️ 完成事項勾選異常: {e}")
-
-
-
     # === 5. 儲存約會記錄 ===
     logger.info("  儲存約會記錄...")
-    try:
-        save_btn = await popup_page.wait_for_selector(SEL['common']['save_button'], state="visible", timeout=5000)
-        await save_btn.click(force=True)
-        await popup_page.wait_for_timeout(TIMING['after_save'] + 1500)
-        logger.info("  ✅ 約會記錄儲存完成")
-    except Exception:
-        logger.warning("  ⚠️ 找不到儲存按鈕或發生異常，嘗試 Ctrl+S")
-        await popup_page.keyboard.press("Control+s")
-        await popup_page.wait_for_timeout(TIMING['after_save'] + 3000)
+    await reliable_save(popup_page, label="約會記錄", timeout=15000)
 
     # 這裡不再執行「儲存後關閉」，保留 popup 開啟狀態，交由後續的產品填寫步驟處理。
 
@@ -448,8 +515,27 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
 
             # 點擊「新增 日報 - 產品介紹明細」按鈕
             logger.info("      呼叫產品新增視窗...")
+            add_prod_btn = popup_frame.locator(SEL['product']['add_product_button'])
+            # 先確認按鈕可見 (30s 而非預設 300s)
+            try:
+                await add_prod_btn.wait_for(state="visible", timeout=30000)
+            except Exception:
+                logger.warning("      ⚠️ 產品新增按鈕 30 秒內未出現，嘗試重新儲存約會記錄...")
+                await reliable_save(popup_page, label="約會記錄(重試)", timeout=10000)
+                # 重新取得 iframe
+                try:
+                    refreshed = await popup_page.wait_for_selector(
+                        SEL['common']['content_iframe'], timeout=10000
+                    )
+                    popup_frame = await refreshed.content_frame()
+                    add_prod_btn = popup_frame.locator(SEL['product']['add_product_button'])
+                    await add_prod_btn.wait_for(state="visible", timeout=15000)
+                except Exception as retry_e:
+                    logger.error(f"      ❌ 重試後仍找不到產品新增按鈕: {retry_e}")
+                    raise
+
             async with context.expect_page() as new_page_info:
-                await popup_frame.locator(SEL['product']['add_product_button']).click()
+                await add_prod_btn.click(timeout=10000)
 
             product_popup = await new_page_info.value
             await product_popup.wait_for_load_state("domcontentloaded", timeout=15000)
@@ -550,23 +636,9 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
             # 4. 儲存並關閉產品 Popup
             logger.info("      儲存該產品...")
             try:
-                try:
-                    # 嚴格使用按鈕制
-                    save_btn = await product_popup.wait_for_selector(SEL['common']['save_button'], state="visible", timeout=5000)
-                    # 等待背景的 loading 遮罩消失，避免 Click 被攔截
-                    try:
-                        await product_popup.wait_for_selector("div#InlineDialog_Background", state="hidden", timeout=3000)
-                    except Exception:
-                        pass
-                    await save_btn.click(force=True)
-                except Exception:
-                    logger.warning("      ⚠️ 找不到可見儲存按鈕，改用 Ctrl+S")
-                    await product_popup.keyboard.press("Control+s")
+                await reliable_save(product_popup, label="產品", timeout=15000)
                 
                 try:
-                    # 等待一下，如果視窗被 CRM 自己關了，這裡會噴例外，我們抓接即可
-                    await product_popup.wait_for_timeout(TIMING['after_save'] + 2000)
-                    
                     # 手動關閉視窗 (因為是點儲存而不是儲存並關閉)
                     if not product_popup.is_closed():
                         await product_popup.close()
@@ -735,13 +807,14 @@ async def create_single_appointment(page, context, period: str, index: int, entr
 # =========================================================================
 #  run_automation — 主流程 (可從 Flask API 或 CLI 呼叫)
 # =========================================================================
-async def run_automation(entries: list[VisitEntry], progress_callback=None):
+async def run_automation(entries: list[VisitEntry], run_date: str = None, progress_callback=None):
     """
     Core automation routine: launches browser, logs in, creates daily report,
     and fills appointment records for each entry.
 
     Args:
         entries: List of VisitEntry objects (parsed visit list).
+        run_date: Date to fill in 'YYYY-MM-DD' format.
         progress_callback: Optional callable(dict) invoked after each step.
     """
     load_dotenv()
@@ -780,7 +853,7 @@ async def run_automation(entries: list[VisitEntry], progress_callback=None):
 
             # Step 2: 新增日報
             _report("daily_report")
-            await create_daily_report(page, base_url)
+            await create_daily_report(page, base_url, run_date)
 
             # 記住日報頁面的 URL，用於每筆約會完成後導航回來
             daily_report_url = page.url

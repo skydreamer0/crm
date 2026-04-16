@@ -6,8 +6,12 @@ crm:
   # === 通用元素 ===
   common:
     content_iframe: "iframe#contentIFrame0"
-    save_button: "img.ms-crm-ImageStrip-Save_16, li[id*='SavePrimary']"
-    save_and_close_button: "img.ms-crm-ImageStrip-SaveAndClose_16, li[id*='SaveAndClosePrimary']"
+    # 根據實際 DOM 診斷結果 (2026-04-17):
+    #   Save img:  class="ms-crm-commandbar-image16by16" src="/_imgs/ribbon/Save_16.png"
+    #   Save li:   command="...Mscrm.SavePrimary" 或 command="...BookOrReschedule"
+    #   SaveClose: command="...Mscrm.SaveAndClosePrimary"
+    save_button: "img.ms-crm-commandbar-image16by16[src*='Save_16'], li[command*='SavePrimary'], li[command*='BookOrReschedule']"
+    save_and_close_button: "img.ms-crm-commandbar-image16by16[src*='SaveAndClose_16'], li[command*='SaveAndClosePrimary']"
 
   # === 日報相關 ===
   daily_report:
