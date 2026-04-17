@@ -20,3 +20,54 @@ departments:
     name_zh: 家醫科
     aliases: [家醫科, 家醫, 家庭醫學科, Family Medicine, fm]
     products: [uri, oxb]
+
+  NEURO:
+    name_zh: 神經內科
+    aliases: [神經內科, 神內, 腦神經內科, Neurology, neuro]
+    products: [uri, oxb]
+
+  CS:
+    name_zh: 心臟外科
+    aliases: [心臟外科, 心外, 心血管外科, Cardiac Surgery, CVS, cs]
+    products: [uri, oxb]
+
+  CARD:
+    name_zh: 心臟內科
+    aliases: [心臟內科, 心內, 心血管內科, Cardiology, card, CV]
+    products: [uri, oxb]
+
+  OPH:
+    name_zh: 眼科
+    aliases: [眼科, Ophthalmology, oph, EYE]
+    products: [amn, amd]
+
+  DERM:
+    name_zh: 皮膚科
+    aliases: [皮膚科, 皮膚, Dermatology, derm]
+    products: [uri, oxb]
+
+  NEPH:
+    name_zh: 腎臟科
+    aliases: [腎臟科, 腎臟內科, 腎臟, 腎內, Nephrology, neph]
+    products: [uri, oxb]
+
+
+  ENDO:
+    name_zh: 新陳代謝科
+    aliases: [新陳代謝科, 新陳代謝, 內分泌科, 內分泌, Endocrinology, endo]
+    products: [uri, oxb]
+
+  RHEUM:
+    name_zh: 風濕免疫科
+    aliases: [風濕免疫科, 風濕科, 風濕, 免疫, Rheumatology, rheum]
+    products: [uri, oxb]
+
+  ONCO:
+    name_zh: 腫瘤科
+    aliases: [腫瘤科, 血液腫瘤科, 腫瘤, Oncology, onco]
+    products: [uri, oxb]
+
+  NS:
+    name_zh: 神經外科
+    aliases: [神經外科, 神外, 腦神經外科, Neurosurgery, ns]
+    products: [uri, oxb]

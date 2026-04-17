@@ -73,3 +73,19 @@ products:
       - 為廣效性抗黴菌藥物，治療率高達 95% 以上。
       - 陰道軟膠囊隨體溫快速溶解，覆蓋範圍廣且復發率低，能讓症狀迅速解除，患者順從性佳。
       - 具備對革蘭氏陽性菌的抗菌活性及對陰道毛滴蟲的抗寄生蟲作用，能全方位處理陰道感染。
+
+  amn:
+    brand_name: AMN
+    generic_name: ""
+    crm_search_term: "AMN"
+    crm_product_id: "AMN"
+    skip_visit_content: true
+    descriptions: []
+
+  amd:
+    brand_name: AMD
+    generic_name: ""
+    crm_search_term: "AMD"
+    crm_product_id: "AMD"
+    skip_visit_content: true
+    descriptions: []
