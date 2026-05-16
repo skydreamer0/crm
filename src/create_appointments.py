@@ -82,6 +82,49 @@ TIMING = {
     "popup_ready":     800,   # popup 加載後的緩衝 (500→800)
 }
 
+def _resolved_lookup_selector(lookup_id: str) -> str:
+    """Return selectors that indicate a CRM lookup has resolved to a real row."""
+    return (
+        f"#{lookup_id} span.ms-crm-Lookup-Item[resolved='true'], "
+        f"#{lookup_id}_lookupDiv span.ms-crm-Lookup-Item[oid]"
+    )
+
+
+def _lookup_item_matches(text: str, title: str, keyvalues: str, expected: str) -> bool:
+    """Check visible and CRM metadata text for the expected lookup value."""
+    expected_value = str(expected or "").casefold()
+    if not expected_value:
+        return False
+
+    haystack = "\n".join(
+        str(part or "") for part in (text, title, keyvalues)
+    ).casefold()
+    return expected_value in haystack
+
+
+async def wait_for_resolved_lookup(frame, lookup_id: str, expected: str, timeout: int = 8000) -> bool:
+    """Poll until a CRM lookup shows a resolved item matching the expected value."""
+    selector = _resolved_lookup_selector(lookup_id)
+    attempts = max(1, timeout // 500)
+
+    for _ in range(attempts):
+        items = await frame.query_selector_all(selector)
+        for item in items:
+            text = await item.text_content() or ""
+            title = await item.get_attribute("title") or ""
+            keyvalues = (
+                await item.get_attribute("keyvalues")
+                or await item.get_attribute("values")
+                or ""
+            )
+            if _lookup_item_matches(text, title, keyvalues, expected):
+                return True
+
+        await asyncio.sleep(0.5)
+
+    return False
+
+
 async def reliable_save(target_page, label: str = "記錄", timeout: int = 15000):
     """
     可靠的儲存操作：先嘗試按鈕，再嘗試 Ctrl+S（確保焦點在正確的視窗上）。
@@ -585,6 +628,15 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
             # --- 產品選完後，用 Tab 離開產品欄位讓 CRM 確認選取 ---
             await product_popup.keyboard.press("Tab")
             await product_popup.wait_for_timeout(TIMING['autocomplete'])
+
+            product_selected = await wait_for_resolved_lookup(
+                prod_frame,
+                "new_product",
+                product_id,
+                timeout=8000,
+            )
+            if not product_selected:
+                raise Exception(f"產品 lookup 未解析，停止儲存避免空白產品: {product_id}")
 
             logger.info("      填寫拜訪目的...")
             try:
