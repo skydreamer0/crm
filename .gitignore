@@ -15,6 +15,9 @@ data/*.json
 logs/
 *.log
 
+# Separate projects
+ENZ_selfpay_website/
+
 # IDEs
 .vscode/
 .idea/
