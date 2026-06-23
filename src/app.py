@@ -21,6 +21,7 @@ import json
 import random
 import asyncio
 import threading
+from pathlib import Path
 
 # === 第三方套件 ===
 from flask import Flask, render_template, request, jsonify
@@ -36,8 +37,24 @@ from visit_list_parser import (
     VisitEntry,
 )
 from create_appointments import run_automation
+from settings_store import (
+    get_effective_settings,
+    get_public_settings,
+    save_settings,
+    settings_path,
+    validate_effective_settings,
+)
 
-app = Flask(__name__)
+
+def _resource_path(relative_path: str) -> Path:
+    """Resolve files both from source and from a PyInstaller bundle."""
+    bundle_dir = getattr(sys, "_MEIPASS", None)
+    if bundle_dir:
+        return Path(bundle_dir) / relative_path
+    return Path(__file__).resolve().parent / relative_path
+
+
+app = Flask(__name__, template_folder=str(_resource_path("templates")))
 
 # ---------------------------------------------------------------------------
 # Shared automation state (thread-safe via GIL for simple dict updates)
@@ -66,6 +83,19 @@ def _reset_state():
 def index():
     """Serve the main GUI page."""
     return render_template("index.html")
+
+
+@app.route("/api/settings", methods=["GET"])
+def api_get_settings():
+    """Return redacted per-user settings status."""
+    return jsonify(get_public_settings())
+
+
+@app.route("/api/settings", methods=["POST"])
+def api_save_settings():
+    """Save per-user settings without returning plaintext secrets."""
+    data = request.get_json(force=True) or {}
+    return jsonify(save_settings(data))
 
 
 @app.route("/api/parse", methods=["POST"])
@@ -137,6 +167,16 @@ def api_execute():
     if not raw_text.strip():
         return jsonify({"status": "error", "message": "沒有待執行的項目"}), 400
 
+    settings = get_effective_settings()
+    missing_fields = validate_effective_settings(settings)
+    if missing_fields:
+        return jsonify({
+            "status": "error",
+            "message": f"請先完成設定：{', '.join(missing_fields)}",
+            "missing_fields": missing_fields,
+            "settings_path": str(settings_path()),
+        }), 400
+
     # Parse entries
     entries = parse_visit_list(raw_text)
     if not entries:
@@ -153,7 +193,14 @@ def api_execute():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            loop.run_until_complete(run_automation(entries, run_date=data.get("date"), progress_callback=progress_cb))
+            loop.run_until_complete(
+                run_automation(
+                    entries,
+                    run_date=data.get("date"),
+                    progress_callback=progress_cb,
+                    settings=settings,
+                )
+            )
             _automation_state["result"] = "success"
         except Exception as e:
             _automation_state["error"] = str(e)
@@ -199,5 +246,5 @@ if __name__ == "__main__":
     _threading.Timer(1.2, open_browser).start()
 
     print(f"\nCRM 操作介面已啟動: http://127.0.0.1:{port}\n")
-    app.run(host="127.0.0.1", port=port, debug=True, use_reloader=False)
+    app.run(host="127.0.0.1", port=port, debug=not getattr(sys, "frozen", False), use_reloader=False)
 

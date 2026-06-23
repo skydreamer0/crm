@@ -165,6 +165,109 @@
             box-shadow: 0 0 8px var(--accent-glow);
         }
 
+        .settings-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 28px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .settings-status {
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 6px 10px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .settings-status.ready {
+            border-color: rgba(52, 211, 153, 0.35);
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .settings-status.missing {
+            border-color: rgba(251, 191, 36, 0.35);
+            background: var(--warning-soft);
+            color: var(--warning);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .settings-field {
+            display: grid;
+            gap: 7px;
+        }
+
+        .settings-field--wide {
+            grid-column: 1 / -1;
+        }
+
+        .settings-field label,
+        .toggle-row span {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .settings-field input[type="text"],
+        .settings-field input[type="password"],
+        .settings-field input[type="url"] {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            min-height: 42px;
+            outline: none;
+            padding: 10px 12px;
+            transition: var(--transition);
+        }
+
+        .settings-field input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .toggle-row {
+            align-items: center;
+            display: flex;
+            gap: 10px;
+            min-height: 42px;
+        }
+
+        .toggle-row input {
+            accent-color: var(--accent);
+            height: 18px;
+            width: 18px;
+        }
+
+        .settings-actions {
+            align-items: center;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
         .textarea-wrapper {
             position: relative;
         }
@@ -564,12 +667,23 @@
             }
 
             .input-section,
+            .settings-section,
             .result-card {
                 padding: 18px;
             }
 
             .actions {
                 flex-direction: column;
+            }
+
+            .settings-header,
+            .settings-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
             }
 
             .product-grid {
@@ -600,6 +714,47 @@
             </div>
             <p class="header__subtitle">貼入待訪名單，自動解析科別與匹配產品</p>
         </header>
+
+        <!-- Settings Section -->
+        <section class="settings-section" id="settingsSection">
+            <div class="settings-header">
+                <div class="section-label" style="margin-bottom:0;">
+                    <span class="section-label__dot"></span>
+                    設定
+                </div>
+                <span id="settingsStatus" class="settings-status missing">尚未設定</span>
+            </div>
+            <div class="settings-grid">
+                <div class="settings-field settings-field--wide">
+                    <label for="settingsBaseUrl">CRM網址</label>
+                    <input type="url" id="settingsBaseUrl" placeholder="https://crm.example.com/SYNCRM/main.aspx">
+                </div>
+                <div class="settings-field">
+                    <label for="settingsUsername">帳號</label>
+                    <input type="text" id="settingsUsername" autocomplete="username">
+                </div>
+                <div class="settings-field">
+                    <label for="settingsPassword">密碼</label>
+                    <input type="password" id="settingsPassword" autocomplete="current-password" placeholder="留空保留既有密碼">
+                </div>
+                <div class="settings-field">
+                    <label for="settingsLineToken">LINE_NOTIFY_TOKEN</label>
+                    <input type="password" id="settingsLineToken" placeholder="可留空">
+                </div>
+                <label class="toggle-row" for="settingsHeadless">
+                    <input type="checkbox" id="settingsHeadless">
+                    <span>HEADLESS</span>
+                </label>
+            </div>
+            <div class="settings-actions">
+                <button class="btn btn--secondary" onclick="loadSettings()">
+                    <span>↻</span> 重新讀取
+                </button>
+                <button class="btn btn--primary" onclick="saveSettings()">
+                    <span>✓</span> 儲存設定
+                </button>
+            </div>
+        </section>
 
         <!-- Input Section -->
         <section class="input-section">
@@ -682,13 +837,72 @@
     <script>
         /* ─── State ───────────────────────────────────────────────── */
         let parsedEntries = [];
+        let settingsConfigured = false;
 
         /* ─── API Calls ───────────────────────────────────────────── */
         document.addEventListener('DOMContentLoaded', () => {
             // 預設為今天
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('runDate').value = today;
+            loadSettings();
         });
+
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || '設定讀取失敗');
+
+                document.getElementById('settingsBaseUrl').value = data.crm_base_url || '';
+                document.getElementById('settingsUsername').value = data.crm_username || '';
+                document.getElementById('settingsPassword').value = '';
+                document.getElementById('settingsLineToken').value = '';
+                document.getElementById('settingsHeadless').checked = !!data.headless;
+                renderSettingsStatus(data);
+            } catch (err) {
+                settingsConfigured = false;
+                renderSettingsStatus({ is_configured: false, missing_fields: ['settings'] });
+                showToast(`設定讀取失敗: ${err.message}`, 'warning');
+            }
+        }
+
+        async function saveSettings() {
+            const payload = {
+                crm_base_url: document.getElementById('settingsBaseUrl').value.trim(),
+                crm_username: document.getElementById('settingsUsername').value.trim(),
+                crm_password: document.getElementById('settingsPassword').value,
+                line_notify_token: document.getElementById('settingsLineToken').value,
+                headless: document.getElementById('settingsHeadless').checked,
+            };
+
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || '設定儲存失敗');
+
+                document.getElementById('settingsPassword').value = '';
+                document.getElementById('settingsLineToken').value = '';
+                renderSettingsStatus(data);
+                showToast('設定已儲存');
+            } catch (err) {
+                showToast(`設定儲存失敗: ${err.message}`, 'warning');
+            }
+        }
+
+        function renderSettingsStatus(data) {
+            const status = document.getElementById('settingsStatus');
+            settingsConfigured = !!data.is_configured;
+            status.className = `settings-status ${settingsConfigured ? 'ready' : 'missing'}`;
+            status.textContent = settingsConfigured ? '設定完成' : '尚未設定';
+
+            if (parsedEntries.length) {
+                document.getElementById('btnExecute').disabled = !settingsConfigured;
+            }
+        }
 
         async function doParse() {
             const text = document.getElementById('visitInput').value.trim();
@@ -717,7 +931,10 @@
                 parsedEntries = data.entries;
                 showStatus('success', `成功解析`, `${data.count} 筆`);
                 renderResults(data.entries);
-                document.getElementById('btnExecute').disabled = false;
+                document.getElementById('btnExecute').disabled = !settingsConfigured;
+                if (!settingsConfigured) {
+                    showToast('Please finish settings before running', 'warning');
+                }
             } catch (err) {
                 showStatus('error', `連線錯誤: ${err.message}`);
             } finally {
@@ -732,6 +949,14 @@
             }
 
             showStatus('loading', '發送執行請求中…');
+            await loadSettings();
+            if (!settingsConfigured) {
+                showStatus('error', 'Please finish settings before running');
+                showToast('Please finish settings before running', 'warning');
+                return;
+            }
+
+            showStatus('loading', 'Starting automation...');
             document.getElementById('btnExecute').disabled = true;
             document.getElementById('btnParse').disabled = true;
 

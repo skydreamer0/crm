@@ -27,6 +27,7 @@ import json
 import logging
 import os
 import random
+import sys
 from pathlib import Path
 
 # === 第三方套件 ===
@@ -49,7 +50,15 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # === 載入外部選擇器 ===
-_CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
+def _resource_path(relative_path: str) -> Path:
+    """Resolve data files both from source and from a PyInstaller bundle."""
+    bundle_dir = getattr(sys, "_MEIPASS", None)
+    if bundle_dir:
+        return Path(bundle_dir) / relative_path
+    return Path(__file__).resolve().parent.parent / relative_path
+
+
+_CONFIG_DIR = _resource_path("config")
 
 
 def load_selectors() -> dict:
@@ -172,9 +181,29 @@ async def reliable_save(target_page, label: str = "記錄", timeout: int = 15000
     await target_page.wait_for_timeout(TIMING['after_save'] + 1500)
 
 
-def send_line_notify(message: str):
+def resolve_runtime_settings(settings: dict | None = None) -> dict:
+    """Resolve automation settings, letting explicit app settings override .env."""
+    load_dotenv()
+    settings = settings or {}
+    headless_value = settings.get("headless")
+    if headless_value is None:
+        headless = os.getenv("HEADLESS", "false").lower() == "true"
+    else:
+        headless = bool(headless_value)
+
+    return {
+        "username": settings.get("crm_username") or os.getenv("CRM_USERNAME"),
+        "password": settings.get("crm_password") or os.getenv("CRM_PASSWORD"),
+        "base_url": settings.get("crm_base_url")
+        or os.getenv("CRM_BASE_URL", "https://crm.synmosa.com.tw/SYNCRM/main.aspx#187829805/"),
+        "line_notify_token": settings.get("line_notify_token") or os.getenv("LINE_NOTIFY_TOKEN"),
+        "headless": headless,
+    }
+
+
+def send_line_notify(message: str, token: str | None = None):
     """傳送 Line Notify 通知 (若環境變數有設定 LINE_NOTIFY_TOKEN)"""
-    token = os.getenv("LINE_NOTIFY_TOKEN")
+    token = token if token is not None else os.getenv("LINE_NOTIFY_TOKEN")
     if not token:
         return
     url = "https://notify-api.line.me/api/notify"
@@ -859,7 +888,12 @@ async def create_single_appointment(page, context, period: str, index: int, entr
 # =========================================================================
 #  run_automation — 主流程 (可從 Flask API 或 CLI 呼叫)
 # =========================================================================
-async def run_automation(entries: list[VisitEntry], run_date: str = None, progress_callback=None):
+async def run_automation(
+    entries: list[VisitEntry],
+    run_date: str = None,
+    progress_callback=None,
+    settings: dict | None = None,
+):
     """
     Core automation routine: launches browser, logs in, creates daily report,
     and fills appointment records for each entry.
@@ -869,11 +903,12 @@ async def run_automation(entries: list[VisitEntry], run_date: str = None, progre
         run_date: Date to fill in 'YYYY-MM-DD' format.
         progress_callback: Optional callable(dict) invoked after each step.
     """
-    load_dotenv()
-    username = os.getenv("CRM_USERNAME")
-    password = os.getenv("CRM_PASSWORD")
-    base_url = os.getenv("CRM_BASE_URL", "https://crm.synmosa.com.tw/SYNCRM/main.aspx#187829805/")
-    headless = os.getenv("HEADLESS", "false").lower() == "true"
+    runtime_settings = resolve_runtime_settings(settings)
+    username = runtime_settings["username"]
+    password = runtime_settings["password"]
+    base_url = runtime_settings["base_url"]
+    headless = runtime_settings["headless"]
+    line_notify_token = runtime_settings["line_notify_token"]
 
     total = len(entries)
     run_history = {
@@ -969,7 +1004,7 @@ async def run_automation(entries: list[VisitEntry], run_date: str = None, progre
                     notify_lines.append(f"  ❌ {e.customer_name}({e.department_code})")
             else:
                 notify_lines.append("\n🎉 全部完成，無遺漏！")
-            send_line_notify("\n".join(notify_lines))
+            send_line_notify("\n".join(notify_lines), token=line_notify_token)
 
             # 將檢核結果寫入 run_history
             run_history["succeeded"] = [e.customer_name for e in succeeded]
@@ -983,7 +1018,10 @@ async def run_automation(entries: list[VisitEntry], run_date: str = None, progre
             os.makedirs("logs/screenshots", exist_ok=True)
             await page.screenshot(path="logs/screenshots/error.png")
             _report("error", detail=str(e))
-            send_line_notify(f"\n❌ CRM 自動化發生嚴重錯誤:\n{e}\n\n請檢查截圖 logs/screenshots/error.png。")
+            send_line_notify(
+                f"\n❌ CRM 自動化發生嚴重錯誤:\n{e}\n\n請檢查截圖 logs/screenshots/error.png。",
+                token=line_notify_token,
+            )
             raise
         finally:
             run_history["end_time"] = datetime.datetime.now().isoformat()
