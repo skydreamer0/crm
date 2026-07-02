@@ -14,7 +14,7 @@ CRM 約會記錄自動化引擎 (create_appointments.py)
      - 填寫拜訪描述（從產品描述庫隨機選取）
      - 勾選完成事項「產品說明」
      - 新增產品介紹明細（產品搜尋 + 拜訪目的 + 拜訪內容）
-  5. 儲存並關閉，執行完畢後發送 Line Notify 通知
+  5. 儲存並關閉，執行完畢後產出三態檢核報告 (完整/部分完成/失敗)
 
 呼叫方式:
   - CLI:    python src/create_appointments.py
@@ -31,7 +31,6 @@ import sys
 from pathlib import Path
 
 # === 第三方套件 ===
-import requests
 import yaml
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
@@ -134,6 +133,74 @@ async def wait_for_resolved_lookup(frame, lookup_id: str, expected: str, timeout
     return False
 
 
+def classify_fill_status(planned: int, ok: int, subgrid_count: int | None) -> tuple[str, bool]:
+    """
+    判定單筆約會的產品填寫狀態。
+
+    Args:
+        planned: 預計新增的產品數
+        ok: 填寫流程回報成功的產品數
+        subgrid_count: CRM 產品明細 subgrid 顯示的實際記錄數 (None = 讀取失敗)
+
+    Returns:
+        (status, verified)
+        status:   "complete" | "partial"
+        verified: True 表示以 CRM subgrid 實際列數為準，False 表示僅依填寫流程結果推斷
+    """
+    if planned <= 0:
+        return "complete", False
+    if subgrid_count is not None:
+        return ("complete" if subgrid_count >= planned else "partial"), True
+    return ("complete" if ok >= planned else "partial"), False
+
+
+def missing_product_codes(product_results: list[dict]) -> list[str]:
+    """從 per-product 結果中列出填寫失敗的產品代碼。"""
+    return [r["code"] for r in product_results if not r.get("ok")]
+
+
+async def count_product_subgrid_rows(popup_page, expected: int, timeout: int = 12000) -> int | None:
+    """
+    讀取約會表單中產品明細 subgrid 的實際記錄數（以 CRM 顯示為準）。
+
+    優先讀狀態列「共 N 個」計數器 (subgrid_total)，讀不到時改數資料列。
+    產品儲存後 subgrid 會非同步刷新，因此輪詢直到數量達到預期或逾時。
+
+    Returns:
+        實際記錄數；None 表示完全無法讀取（驗證結果視為未知）。
+    """
+    deadline = asyncio.get_running_loop().time() + timeout / 1000
+    last_count = None
+
+    while True:
+        try:
+            iframe_el = await popup_page.wait_for_selector(
+                SEL['common']['content_iframe'], timeout=5000
+            )
+            frame = await iframe_el.content_frame()
+            if frame:
+                count = None
+                total_el = await frame.query_selector(SEL['product']['subgrid_total'])
+                if total_el:
+                    text = (await total_el.text_content() or "").strip()
+                    if text.isdigit():
+                        count = int(text)
+                if count is None:
+                    rows = await frame.query_selector_all(SEL['product']['subgrid_rows'])
+                    if rows:
+                        count = len(rows)
+                if count is not None:
+                    last_count = count
+        except Exception:
+            pass
+
+        if last_count is not None and last_count >= expected:
+            return last_count
+        if asyncio.get_running_loop().time() >= deadline:
+            return last_count
+        await asyncio.sleep(1)
+
+
 async def reliable_save(target_page, label: str = "記錄", timeout: int = 15000):
     """
     可靠的儲存操作：先嘗試按鈕，再嘗試 Ctrl+S（確保焦點在正確的視窗上）。
@@ -196,7 +263,6 @@ def resolve_runtime_settings(settings: dict | None = None) -> dict:
         "password": settings.get("crm_password") or os.getenv("CRM_PASSWORD"),
         "base_url": settings.get("crm_base_url")
         or os.getenv("CRM_BASE_URL", "https://crm.synmosa.com.tw/SYNCRM/main.aspx#187829805/"),
-        "line_notify_token": settings.get("line_notify_token") or os.getenv("LINE_NOTIFY_TOKEN"),
         "headless": headless,
     }
 
@@ -205,20 +271,6 @@ def _load_dotenv_for_source_runtime() -> None:
     if not getattr(sys, "frozen", False):
         load_dotenv()
 
-
-def send_line_notify(message: str, token: str | None = None):
-    """傳送 Line Notify 通知 (若環境變數有設定 LINE_NOTIFY_TOKEN)"""
-    token = token if token is not None else os.getenv("LINE_NOTIFY_TOKEN")
-    if not token:
-        return
-    url = "https://notify-api.line.me/api/notify"
-    headers = {"Authorization": f"Bearer {token}"}
-    data = {"message": message}
-    try:
-        requests.post(url, headers=headers, data=data, timeout=5)
-        logger.info("🔔 Line Notify 發送成功")
-    except Exception as e:
-        logger.warning(f"⚠️ Line Notify 發送失敗: {e}")
 
 # === 預設待訪名單（僅供 CLI 直接執行時使用，Web UI 會從前端傳入） ===
 VISIT_LIST = """
@@ -335,7 +387,7 @@ async def find_add_activity_button(page):
 # =========================================================================
 #  fill_appointment — 還原為原始可運作版本 (不包含 context / 不包含產品選取)
 # =========================================================================
-async def fill_appointment(popup_page, period: str, entry: VisitEntry = None):
+async def fill_appointment(popup_page, period: str, entry: VisitEntry = None, state: dict | None = None):
     """
     在約會記錄 popup 視窗中填寫基本表單。
     流程: 姓名 → 時段 → 勾選產品說明 → 截圖 → 儲存 → 儲存後關閉
@@ -344,6 +396,8 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None):
         popup_page: Playwright popup page 物件
         period: "上午" 或 "下午"
         entry: VisitEntry 物件 (含客戶姓名、科別、產品)
+        state: 可選的進度標記 dict；儲存成功後會設定 state["appointment_saved"] = True，
+               供外層在流程中斷時判斷是否已留下孤立記錄
     """
     customer_name = entry.customer_name if entry else ""
     logger.info(f"填寫約會記錄 (時段: {period}, 拜訪對象: {customer_name})...")
@@ -555,6 +609,8 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None):
     # === 5. 儲存約會記錄 ===
     logger.info("  儲存約會記錄...")
     await reliable_save(popup_page, label="約會記錄", timeout=15000)
+    if state is not None:
+        state["appointment_saved"] = True
 
     # 這裡不再執行「儲存後關閉」，保留 popup 開啟狀態，交由後續的產品填寫步驟處理。
 
@@ -563,7 +619,7 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None):
 #  add_products — 產品選取 (在約會已儲存後、獨立操作)
 #  TODO: 此功能獨立於基本填表流程。目前先註解，確認基本流程穩定後再啟用。
 # =========================================================================
-async def add_products_to_appointment(popup_page, popup_frame, context, entry: VisitEntry):
+async def add_products_to_appointment(popup_page, popup_frame, context, entry: VisitEntry) -> dict:
     """
     在已儲存的約會記錄中新增產品（需先儲存約會才能啟用子表單）
 
@@ -572,13 +628,17 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
         popup_frame: popup 內的 iframe
         context: browser context (用於接管新彈出的產品視窗)
         entry: VisitEntry 物件
+
+    Returns:
+        {"planned": [產品代碼...], "results": [{"code", "ok", "error"}, ...]}
     """
     if not entry or not entry.matched_products:
         logger.info("  ⚠️ 無匹配產品資料")
-        return
+        return {"planned": [], "results": []}
 
     products_to_add = select_products(entry, count=2)
     logger.info(f"  → 預計新增產品: {products_to_add}")
+    results: list[dict] = []
 
     for p_idx, product_code in enumerate(products_to_add):
         logger.info(f"    [{p_idx+1}/{len(products_to_add)}] 正在處理產品: {product_code}")
@@ -586,6 +646,7 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
             product_id = resolve_crm_product_id(product_code, entry)
             if not product_id:
                 logger.warning(f"      ⚠️ 無法解析產品編號，跳過: {product_code}")
+                results.append({"code": product_code, "ok": False, "error": "無法解析產品編號"})
                 continue
 
             logger.info(f"      產品編號: {product_id}")
@@ -620,9 +681,13 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
             # 取得 product popup 內的表單 iframe
             prod_iframe_element = await product_popup.wait_for_selector(SEL['common']['content_iframe'], timeout=15000)
             prod_frame = await prod_iframe_element.content_frame()
+            # 等產品輸入欄真正出現 (條件等待，取代原本固定 3 秒):
+            # CRM 慢時可等到 20 秒，CRM 快時立即繼續
+            await prod_frame.wait_for_selector(
+                SEL['product']['product_input'], state="visible", timeout=20000
+            )
+            # 欄位出現後仍需短暫緩衝讓 CRM JS 綁定 autocomplete 事件
             await product_popup.wait_for_timeout(TIMING['iframe_ready'])
-            # CRM 開啟新視窗較慢，多等一點時間讓輸入框與事件綁定完成
-            await product_popup.wait_for_timeout(2500)
 
             logger.info("      輸入產品編號搜尋...")
             prod_input = prod_frame.locator(SEL['product']['product_input'])
@@ -733,8 +798,10 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
                     pass
                     
                 logger.info(f"    ✅ 產品 {product_code} 儲存並關閉完成")
+                results.append({"code": product_code, "ok": True, "error": None})
             except Exception as e:
                 logger.warning(f"      ⚠️ 產品儲存發生異常: {e}")
+                results.append({"code": product_code, "ok": False, "error": f"儲存異常: {e}"})
                 try:
                     if not product_popup.is_closed():
                         await product_popup.close()
@@ -743,6 +810,7 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
 
         except Exception as e:
             logger.warning(f"    ⚠️ 處理產品 {product_code} 時發生異常: {e}")
+            results.append({"code": product_code, "ok": False, "error": str(e)})
 
         # === 產品間等待: 讓約會表單的 subgrid (產品明細列表) 完成背景重整 ===
         # 儲存第一項產品後，CRM 會自動 reload 約會表單的 iframe，
@@ -769,6 +837,8 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
             except Exception as e:
                 logger.warning(f"    ⚠️ 等待 subgrid 刷新時發生異常: {e}")
 
+    return {"planned": products_to_add, "results": results}
+
 
 # =========================================================================
 #  cleanup & create_single_appointment
@@ -784,7 +854,7 @@ async def cleanup_stale_popups(context, main_page):
                 pass
 
 
-async def create_single_appointment(page, context, period: str, index: int, entry: VisitEntry = None, daily_report_url: str = None):
+async def create_single_appointment(page, context, period: str, index: int, entry: VisitEntry = None, daily_report_url: str = None, state: dict | None = None):
     """
     建立單筆約會記錄
 
@@ -795,6 +865,7 @@ async def create_single_appointment(page, context, period: str, index: int, entr
         index: 第幾筆 (1-based)
         entry: VisitEntry 物件 (含客戶姓名、科別、產品)
         daily_report_url: 日報頁面的 URL，用於完成後導航回去
+        state: 可選的進度標記 dict，傳遞給 fill_appointment 追蹤儲存狀態
     """
     customer_label = f" — {entry.customer_name}" if entry else ""
     logger.info(f"{'='*50}")
@@ -838,7 +909,17 @@ async def create_single_appointment(page, context, period: str, index: int, entr
     logger.info(f"✅ Popup 開啟: {popup_page.url}")
 
     # 填寫約會表單 (原始可運作邏輯，不包含產品)
-    await fill_appointment(popup_page, period, entry=entry)
+    await fill_appointment(popup_page, period, entry=entry, state=state)
+
+    # 產品填寫結果 (預設: 無產品可填 → complete)
+    fill_result = {
+        "products_planned": [],
+        "product_results": [],
+        "subgrid_count": None,
+        "status": "complete",
+        "verified": False,
+        "screenshot": None,
+    }
 
     # 取得 popup 內的表單 iframe (為了給新增產品使用)
     try:
@@ -850,10 +931,62 @@ async def create_single_appointment(page, context, period: str, index: int, entr
         # === 新增產品 ===
         # 移至此處，在約會已經儲存 (但尚未關閉) 的情況下，接續執行新增產品
         if popup_frame and entry and entry.matched_products:
-            await add_products_to_appointment(popup_page, popup_frame, context, entry)
+            product_outcome = await add_products_to_appointment(popup_page, popup_frame, context, entry)
+            fill_result["products_planned"] = product_outcome["planned"]
+            fill_result["product_results"] = product_outcome["results"]
 
     except Exception as e:
         logger.warning(f"  ⚠️ 準備新增產品時發生異常: {e}")
+        if entry and entry.matched_products and not fill_result["products_planned"]:
+            # 連產品新增流程都沒跑到 → 全部視為缺漏，避免誤判成完整
+            fill_result["products_planned"] = select_products(entry, count=2)
+            fill_result["product_results"] = [
+                {"code": c, "ok": False, "error": f"準備新增產品時發生異常: {e}"}
+                for c in fill_result["products_planned"]
+            ]
+
+    # === 驗證產品明細 subgrid (以 CRM 實際記錄數為準) ===
+    planned_count = len(fill_result["products_planned"])
+    ok_count = sum(1 for r in fill_result["product_results"] if r.get("ok"))
+    if planned_count and not popup_page.is_closed():
+        fill_result["subgrid_count"] = await count_product_subgrid_rows(
+            popup_page, expected=planned_count
+        )
+        if fill_result["subgrid_count"] is None:
+            logger.warning("  ⚠️ 無法讀取產品明細 subgrid，改以填寫流程結果判定")
+
+    status, verified = classify_fill_status(
+        planned_count, ok_count, fill_result["subgrid_count"]
+    )
+    fill_result["status"] = status
+    fill_result["verified"] = verified
+
+    if status == "partial":
+        missing = missing_product_codes(fill_result["product_results"])
+        detail = f"缺漏產品: {missing}" if missing else (
+            f"CRM 顯示 {fill_result['subgrid_count']}/{planned_count} 筆"
+        )
+        logger.warning(f"  🟡 產品填寫不完整 — {detail}")
+
+        # 截圖佐證，方便事後補填時對照
+        try:
+            os.makedirs("logs/screenshots", exist_ok=True)
+            safe_name = "".join(
+                c for c in (entry.customer_name if entry else str(index)) if c.isalnum()
+            ) or str(index)
+            shot_path = (
+                f"logs/screenshots/partial_"
+                f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{index}_{safe_name}.png"
+            )
+            target = popup_page if not popup_page.is_closed() else page
+            await target.screenshot(path=shot_path)
+            fill_result["screenshot"] = shot_path
+            logger.warning(f"  📸 已截圖: {shot_path}")
+        except Exception as e:
+            logger.warning(f"  ⚠️ 部分完成截圖失敗: {e}")
+    elif planned_count:
+        source = "CRM subgrid 驗證" if verified else "填寫流程"
+        logger.info(f"  ✅ 產品填寫完整 ({ok_count}/{planned_count}，依 {source})")
 
     # === 關閉約會 Popup ===
     try:
@@ -888,6 +1021,7 @@ async def create_single_appointment(page, context, period: str, index: int, entr
     await page.wait_for_timeout(TIMING['page_transition'])
 
     logger.info(f"✅ 第 {index} 筆約會記錄建立完成\n")
+    return fill_result
 
 
 # =========================================================================
@@ -898,6 +1032,7 @@ async def run_automation(
     run_date: str = None,
     progress_callback=None,
     settings: dict | None = None,
+    cancel_event=None,
 ):
     """
     Core automation routine: launches browser, logs in, creates daily report,
@@ -907,13 +1042,14 @@ async def run_automation(
         entries: List of VisitEntry objects (parsed visit list).
         run_date: Date to fill in 'YYYY-MM-DD' format.
         progress_callback: Optional callable(dict) invoked after each step.
+        cancel_event: Optional threading.Event; set 之後會在目前這筆處理完停止，
+                      未執行的筆數列入失敗名單 (原因: 使用者取消)。
     """
     runtime_settings = resolve_runtime_settings(settings)
     username = runtime_settings["username"]
     password = runtime_settings["password"]
     base_url = runtime_settings["base_url"]
     headless = runtime_settings["headless"]
-    line_notify_token = runtime_settings["line_notify_token"]
 
     total = len(entries)
     run_history = {
@@ -952,70 +1088,126 @@ async def run_automation(
             logger.info(f"📌 日報頁面 URL: {daily_report_url[:100]}")
 
             # Step 3: 批次建立約會記錄
-            succeeded: list[VisitEntry] = []
-            failed: list[tuple[VisitEntry, str]] = []  # (entry, error_message)
+            succeeded: list[tuple[VisitEntry, dict]] = []  # (entry, fill_result)
+            failed: list[tuple[VisitEntry, str, bool]] = []  # (entry, error_message, orphan_risk)
 
             midpoint = (total + 1) // 2
             browser_dead = False
+            was_cancelled = False
             for idx, entry in enumerate(entries, start=1):
+                if cancel_event is not None and cancel_event.is_set():
+                    logger.warning("🛑 收到取消請求，停止後續約會記錄")
+                    _report("cancelled", idx, "使用者取消，停止後續執行")
+                    was_cancelled = True
+                    failed.extend(
+                        (remaining, "使用者取消，未執行", False)
+                        for remaining in entries[idx - 1:]
+                    )
+                    break
                 if browser_dead:
-                    failed.append((entry, "瀏覽器已關閉，跳過"))
+                    failed.append((entry, "瀏覽器已關閉，跳過", False))
                     continue
+                entry_state = {"appointment_saved": False}
                 try:
                     period = "上午" if idx <= midpoint else "下午"
                     _report("appointment", idx, f"{entry.customer_name} ({period})")
-                    await create_single_appointment(page, context, period, idx, entry=entry, daily_report_url=daily_report_url)
-                    succeeded.append(entry)
+                    fill_result = await create_single_appointment(page, context, period, idx, entry=entry, daily_report_url=daily_report_url, state=entry_state)
+                    succeeded.append((entry, fill_result))
                 except Exception as entry_e:
                     err_msg = str(entry_e)
+                    # 孤立記錄風險: 約會已儲存進 CRM，但後續流程 (產品/關閉) 中斷
+                    orphan_risk = entry_state["appointment_saved"]
                     logger.warning(f"⚠️ 第 {idx} 筆資料 ({entry.customer_name}) 執行異常: {entry_e}")
+                    if orphan_risk:
+                        logger.warning(f"   ⚠️ 此筆約會可能已存入 CRM (孤立記錄)，請檢查是否留下不完整記錄")
                     _report("error", idx, f"跳過此筆: {entry_e}")
-                    failed.append((entry, err_msg))
+                    failed.append((entry, err_msg, orphan_risk))
                     # 偵測瀏覽器崩潰：如果頁面/Context 已關閉，後面全部不用再試
                     if "has been closed" in err_msg or "Target closed" in err_msg:
                         logger.error("🛑 瀏覽器已關閉，停止後續所有約會記錄")
                         browser_dead = True
 
             # =================================================================
-            #  Step 4: 最終檢核報告 — 哪些醫師沒寫到
+            #  Step 4: 最終檢核報告 — 三態: 完整 / 部分完成 / 失敗
             # =================================================================
+            complete = [(e, fr) for e, fr in succeeded if fr.get("status") == "complete"]
+            partial = [(e, fr) for e, fr in succeeded if fr.get("status") == "partial"]
+
+            def _partial_detail(e: VisitEntry, fr: dict) -> dict:
+                planned = fr.get("products_planned", [])
+                missing = missing_product_codes(fr.get("product_results", []))
+                note = ""
+                if not missing and fr.get("verified"):
+                    # 流程回報全部成功，但 CRM subgrid 記錄數不足 → 無法確定缺哪個
+                    note = f"CRM 顯示 {fr.get('subgrid_count')}/{len(planned)} 筆，請開啟該筆確認"
+                return {
+                    "name": e.customer_name,
+                    "dept": e.department_code,
+                    "planned": planned,
+                    "missing": missing,
+                    "subgrid_count": fr.get("subgrid_count"),
+                    "verified": fr.get("verified", False),
+                    "note": note,
+                    "screenshot": fr.get("screenshot"),
+                }
+
+            partial_details = [_partial_detail(e, fr) for e, fr in partial]
+
             logger.info("")
             logger.info("=" * 60)
             logger.info("📋 最終檢核報告")
             logger.info("=" * 60)
             logger.info(f"  預計處理: {total} 筆")
-            logger.info(f"  ✅ 成功:  {len(succeeded)} 筆")
+            logger.info(f"  ✅ 完整:  {len(complete)} 筆")
+            logger.info(f"  🟡 部分完成:  {len(partial)} 筆")
             logger.info(f"  ❌ 失敗:  {len(failed)} 筆")
 
-            if succeeded:
+            if complete:
                 logger.info("")
-                logger.info("  ── 成功名單 ──")
-                for e in succeeded:
+                logger.info("  ── 完整名單 ──")
+                for e, _ in complete:
                     logger.info(f"    ✅ {e.customer_name} ({e.department_code})")
+
+            if partial_details:
+                logger.info("")
+                logger.info("  ── 🟡 部分完成名單 (約會已建立，產品需補填) ──")
+                for d in partial_details:
+                    reason = f"缺漏: {', '.join(d['missing'])}" if d["missing"] else d["note"]
+                    logger.info(f"    🟡 {d['name']} ({d['dept']}) — {reason}")
+                    if d["screenshot"]:
+                        logger.info(f"       📸 {d['screenshot']}")
 
             if failed:
                 logger.info("")
                 logger.info("  ── ⚠️ 未完成名單 (請手動補填) ──")
-                for e, err in failed:
-                    logger.info(f"    ❌ {e.customer_name} ({e.department_code}) — 原因: {err[:80]}")
+                for e, err, orphan in failed:
+                    orphan_note = " [⚠️ 約會可能已存入 CRM，請檢查孤立記錄]" if orphan else ""
+                    logger.info(f"    ❌ {e.customer_name} ({e.department_code}) — 原因: {err[:80]}{orphan_note}")
 
             logger.info("=" * 60)
 
-            # 組合 Line Notify 訊息
-            notify_lines = [f"\n📋 CRM 自動化檢核報告", f"預計: {total} 筆 | ✅ 成功: {len(succeeded)} | ❌ 失敗: {len(failed)}"]
-            if failed:
-                notify_lines.append("\n⚠️ 未完成名單:")
-                for e, err in failed:
-                    notify_lines.append(f"  ❌ {e.customer_name}({e.department_code})")
-            else:
-                notify_lines.append("\n🎉 全部完成，無遺漏！")
-            send_line_notify("\n".join(notify_lines), token=line_notify_token)
-
             # 將檢核結果寫入 run_history
-            run_history["succeeded"] = [e.customer_name for e in succeeded]
-            run_history["failed"] = [{"name": e.customer_name, "dept": e.department_code, "error": err} for e, err in failed]
+            run_history["succeeded"] = [e.customer_name for e, _ in succeeded]
+            run_history["completed"] = [
+                {"name": e.customer_name, "dept": e.department_code} for e, _ in complete
+            ]
+            run_history["partial"] = partial_details
+            run_history["failed"] = [
+                {"name": e.customer_name, "dept": e.department_code, "error": err, "orphan": orphan}
+                for e, err, orphan in failed
+            ]
+
+            summary = {
+                "total": total,
+                "complete": run_history["completed"],
+                "partial": partial_details,
+                "failed": run_history["failed"],
+                "cancelled": was_cancelled,
+            }
+            run_history["cancelled"] = was_cancelled
 
             _report("done")
+            return summary
 
         except Exception as e:
             logger.error(f"❌ 執行錯誤: {e}")
@@ -1023,10 +1215,6 @@ async def run_automation(
             os.makedirs("logs/screenshots", exist_ok=True)
             await page.screenshot(path="logs/screenshots/error.png")
             _report("error", detail=str(e))
-            send_line_notify(
-                f"\n❌ CRM 自動化發生嚴重錯誤:\n{e}\n\n請檢查截圖 logs/screenshots/error.png。",
-                token=line_notify_token,
-            )
             raise
         finally:
             run_history["end_time"] = datetime.datetime.now().isoformat()

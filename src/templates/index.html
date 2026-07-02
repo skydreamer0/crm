@@ -165,21 +165,30 @@
             box-shadow: 0 0 8px var(--accent-glow);
         }
 
-        .settings-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            margin-bottom: 28px;
-            box-shadow: var(--shadow-sm);
+        .header__topbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 12px;
         }
 
-        .settings-header {
-            display: flex;
+        .settings-link {
+            display: inline-flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 18px;
+            gap: 10px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+
+        .settings-link:hover {
+            color: var(--text-primary);
+            border-color: var(--text-muted);
+            background: var(--bg-card-hover);
         }
 
         .settings-status {
@@ -202,70 +211,6 @@
             border-color: rgba(251, 191, 36, 0.35);
             background: var(--warning-soft);
             color: var(--warning);
-        }
-
-        .settings-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
-        }
-
-        .settings-field {
-            display: grid;
-            gap: 7px;
-        }
-
-        .settings-field--wide {
-            grid-column: 1 / -1;
-        }
-
-        .settings-field label,
-        .toggle-row span {
-            color: var(--text-secondary);
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .settings-field input[type="text"],
-        .settings-field input[type="password"],
-        .settings-field input[type="url"] {
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 14px;
-            min-height: 42px;
-            outline: none;
-            padding: 10px 12px;
-            transition: var(--transition);
-        }
-
-        .settings-field input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-soft);
-        }
-
-        .toggle-row {
-            align-items: center;
-            display: flex;
-            gap: 10px;
-            min-height: 42px;
-        }
-
-        .toggle-row input {
-            accent-color: var(--accent);
-            height: 18px;
-            width: 18px;
-        }
-
-        .settings-actions {
-            align-items: center;
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 16px;
         }
 
         .textarea-wrapper {
@@ -366,6 +311,16 @@
             border-color: var(--text-muted);
         }
 
+        .btn--small {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+
+        .btn--small:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .btn--execute {
             background: var(--gradient-2);
             color: #064e3b;
@@ -414,6 +369,11 @@
         .status-bar.loading {
             border-color: rgba(108, 99, 255, 0.3);
             background: var(--accent-soft);
+        }
+
+        .status-bar.warning {
+            border-color: rgba(251, 191, 36, 0.35);
+            background: var(--warning-soft);
         }
 
         .status-bar__text {
@@ -505,6 +465,82 @@
             margin-bottom: 6px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.02);
             padding-bottom: 6px;
+        }
+
+        /* ─── Fill Report (填寫檢核) ──────────────────────────────── */
+        .fill-summary {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .fill-summary__stat {
+            flex: 1;
+            min-width: 110px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            text-align: center;
+        }
+
+        .fill-summary__num {
+            font-size: 26px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .fill-summary__label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .fill-summary__stat.ok .fill-summary__num { color: var(--success); }
+        .fill-summary__stat.warn .fill-summary__num { color: var(--warning); }
+        .fill-summary__stat.bad .fill-summary__num { color: var(--error); }
+
+        .fill-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .fill-table caption {
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            padding-bottom: 8px;
+        }
+
+        .fill-table caption.warn { color: var(--warning); }
+        .fill-table caption.bad { color: var(--error); }
+
+        .fill-table th,
+        .fill-table td {
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .fill-table th {
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .fill-table .missing-code {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .fill-report-allgood {
+            color: var(--success);
+            font-size: 14px;
+            font-weight: 600;
         }
 
         .results-header {
@@ -667,23 +703,12 @@
             }
 
             .input-section,
-            .settings-section,
             .result-card {
                 padding: 18px;
             }
 
             .actions {
                 flex-direction: column;
-            }
-
-            .settings-header,
-            .settings-actions {
-                align-items: stretch;
-                flex-direction: column;
-            }
-
-            .settings-grid {
-                grid-template-columns: 1fr;
             }
 
             .product-grid {
@@ -708,53 +733,18 @@
     <div class="app">
         <!-- Header -->
         <header class="header">
+            <div class="header__topbar">
+                <a class="settings-link" href="/settings" id="settingsLink">
+                    <span id="settingsStatus" class="settings-status missing">尚未設定</span>
+                    <span>⚙️ 設定</span>
+                </a>
+            </div>
             <div class="header__logo">
                 <div class="header__icon">📋</div>
                 <h1 class="header__title">CRM 操作介面</h1>
             </div>
             <p class="header__subtitle">貼入待訪名單，自動解析科別與匹配產品</p>
         </header>
-
-        <!-- Settings Section -->
-        <section class="settings-section" id="settingsSection">
-            <div class="settings-header">
-                <div class="section-label" style="margin-bottom:0;">
-                    <span class="section-label__dot"></span>
-                    設定
-                </div>
-                <span id="settingsStatus" class="settings-status missing">尚未設定</span>
-            </div>
-            <div class="settings-grid">
-                <div class="settings-field settings-field--wide">
-                    <label for="settingsBaseUrl">CRM網址</label>
-                    <input type="url" id="settingsBaseUrl" placeholder="https://crm.example.com/SYNCRM/main.aspx">
-                </div>
-                <div class="settings-field">
-                    <label for="settingsUsername">帳號</label>
-                    <input type="text" id="settingsUsername" autocomplete="username">
-                </div>
-                <div class="settings-field">
-                    <label for="settingsPassword">密碼</label>
-                    <input type="password" id="settingsPassword" autocomplete="current-password" placeholder="留空保留既有密碼">
-                </div>
-                <div class="settings-field">
-                    <label for="settingsLineToken">LINE_NOTIFY_TOKEN</label>
-                    <input type="password" id="settingsLineToken" placeholder="可留空">
-                </div>
-                <label class="toggle-row" for="settingsHeadless">
-                    <input type="checkbox" id="settingsHeadless">
-                    <span>HEADLESS</span>
-                </label>
-            </div>
-            <div class="settings-actions">
-                <button class="btn btn--secondary" onclick="loadSettings()">
-                    <span>↻</span> 重新讀取
-                </button>
-                <button class="btn btn--primary" onclick="saveSettings()">
-                    <span>✓</span> 儲存設定
-                </button>
-            </div>
-        </section>
 
         <!-- Input Section -->
         <section class="input-section">
@@ -810,13 +800,27 @@
             <div class="execution-card">
                 <div class="progress-header">
                     <span>自動化進度</span>
-                    <span id="progressText">0%</span>
+                    <span style="display:flex;align-items:center;gap:12px;">
+                        <span id="progressText">0%</span>
+                        <button id="btnCancel" class="btn btn--secondary btn--small" onclick="doCancel()" style="display:none;">
+                            ⏹ 取消
+                        </button>
+                    </span>
                 </div>
                 <div class="progress-bar-container">
                     <div id="progressBarFill" class="progress-bar-fill"></div>
                 </div>
                 <div id="executionLog" class="execution-log"></div>
             </div>
+        </section>
+
+        <!-- Fill Report (執行後檢核) -->
+        <section id="fillReportSection" class="execution-section">
+            <div class="section-label">
+                <span class="section-label__dot"></span>
+                填寫檢核
+            </div>
+            <div class="execution-card" id="fillReportCard"></div>
         </section>
 
         <!-- Results -->
@@ -852,44 +856,11 @@
                 const res = await fetch('/api/settings');
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || '設定讀取失敗');
-
-                document.getElementById('settingsBaseUrl').value = data.crm_base_url || '';
-                document.getElementById('settingsUsername').value = data.crm_username || '';
-                document.getElementById('settingsPassword').value = '';
-                document.getElementById('settingsLineToken').value = '';
-                document.getElementById('settingsHeadless').checked = !!data.headless;
                 renderSettingsStatus(data);
             } catch (err) {
                 settingsConfigured = false;
                 renderSettingsStatus({ is_configured: false, missing_fields: ['settings'] });
                 showToast(`設定讀取失敗: ${err.message}`, 'warning');
-            }
-        }
-
-        async function saveSettings() {
-            const payload = {
-                crm_base_url: document.getElementById('settingsBaseUrl').value.trim(),
-                crm_username: document.getElementById('settingsUsername').value.trim(),
-                crm_password: document.getElementById('settingsPassword').value,
-                line_notify_token: document.getElementById('settingsLineToken').value,
-                headless: document.getElementById('settingsHeadless').checked,
-            };
-
-            try {
-                const res = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message || '設定儲存失敗');
-
-                document.getElementById('settingsPassword').value = '';
-                document.getElementById('settingsLineToken').value = '';
-                renderSettingsStatus(data);
-                showToast('設定已儲存');
-            } catch (err) {
-                showToast(`設定儲存失敗: ${err.message}`, 'warning');
             }
         }
 
@@ -933,7 +904,7 @@
                 renderResults(data.entries);
                 document.getElementById('btnExecute').disabled = !settingsConfigured;
                 if (!settingsConfigured) {
-                    showToast('Please finish settings before running', 'warning');
+                    showToast('⚠️ 請先至「⚙️ 設定」頁完成設定', 'warning');
                 }
             } catch (err) {
                 showStatus('error', `連線錯誤: ${err.message}`);
@@ -951,12 +922,12 @@
             showStatus('loading', '發送執行請求中…');
             await loadSettings();
             if (!settingsConfigured) {
-                showStatus('error', 'Please finish settings before running');
-                showToast('Please finish settings before running', 'warning');
+                showStatus('error', '請先至「⚙️ 設定」頁完成設定');
+                showToast('⚠️ 請先至「⚙️ 設定」頁完成設定', 'warning');
                 return;
             }
 
-            showStatus('loading', 'Starting automation...');
+            showStatus('loading', '啟動自動化中…');
             document.getElementById('btnExecute').disabled = true;
             document.getElementById('btnParse').disabled = true;
 
@@ -989,7 +960,26 @@
         let pollInterval;
         let logCount = 0;
 
+        async function doCancel() {
+            const btn = document.getElementById('btnCancel');
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/cancel', { method: 'POST' });
+                const data = await res.json();
+                showToast(data.message, res.ok ? '' : 'warning');
+                if (!res.ok) btn.disabled = false;
+            } catch (err) {
+                showToast(`取消失敗: ${err.message}`, 'warning');
+                btn.disabled = false;
+            }
+        }
+
         async function startPollingStatus() {
+            const btnCancel = document.getElementById('btnCancel');
+            btnCancel.style.display = 'inline-flex';
+            btnCancel.disabled = false;
+            document.getElementById('fillReportSection').classList.remove('visible');
+            document.getElementById('fillReportCard').innerHTML = '';
             document.getElementById('executionLog').innerHTML = '';
             updateProgress(0, 0, parsedEntries.length);
             logCount = 0;
@@ -1005,12 +995,23 @@
                         clearInterval(pollInterval);
                         document.getElementById('btnExecute').disabled = false;
                         document.getElementById('btnParse').disabled = false;
+                        document.getElementById('btnCancel').style.display = 'none';
 
                         if (data.result === 'success') {
-                            showStatus('success', '✅ 自動化執行完畢！', '');
                             updateProgress(100, parsedEntries.length, parsedEntries.length);
+                            const needFix = data.summary
+                                ? (data.summary.partial.length + data.summary.failed.length) : 0;
+                            if (data.summary && data.summary.cancelled) {
+                                showStatus('warning', `⏹ 已取消執行，有 ${needFix} 筆未完成，請看下方檢核報告`, '');
+                            } else if (needFix > 0) {
+                                showStatus('warning', `⚠️ 執行完畢，但有 ${needFix} 筆需要補填，請看下方檢核報告`, '');
+                            } else {
+                                showStatus('success', '✅ 自動化執行完畢，全部填寫完整！', '');
+                            }
+                            renderFillReport(data.summary);
                         } else {
                             showStatus('error', `❌ 執行發生錯誤: ${data.error}`, '');
+                            renderFillReport(data.summary);
                         }
                     }
                 } catch (err) {
@@ -1058,6 +1059,79 @@
             }
         }
 
+        function renderFillReport(summary) {
+            if (!summary) return;
+            const card = document.getElementById('fillReportCard');
+            const partial = summary.partial || [];
+            const failed = summary.failed || [];
+            const complete = summary.complete || [];
+
+            let html = `
+                <div class="fill-summary">
+                    <div class="fill-summary__stat">
+                        <div class="fill-summary__num">${summary.total}</div>
+                        <div class="fill-summary__label">預計處理</div>
+                    </div>
+                    <div class="fill-summary__stat ok">
+                        <div class="fill-summary__num">${complete.length}</div>
+                        <div class="fill-summary__label">✅ 完整</div>
+                    </div>
+                    <div class="fill-summary__stat warn">
+                        <div class="fill-summary__num">${partial.length}</div>
+                        <div class="fill-summary__label">🟡 部分完成</div>
+                    </div>
+                    <div class="fill-summary__stat bad">
+                        <div class="fill-summary__num">${failed.length}</div>
+                        <div class="fill-summary__label">❌ 失敗</div>
+                    </div>
+                </div>`;
+
+            if (partial.length) {
+                const rows = partial.map(p => {
+                    const reason = p.missing && p.missing.length
+                        ? `缺漏: <span class="missing-code">${escHtml(p.missing.join(', '))}</span>`
+                        : escHtml(p.note || '產品數量不足');
+                    return `<tr>
+                        <td>${escHtml(p.name)}</td>
+                        <td>${escHtml(p.dept)}</td>
+                        <td>${escHtml((p.planned || []).join(', '))}</td>
+                        <td>${reason}</td>
+                        <td>${p.screenshot ? escHtml(p.screenshot) : '—'}</td>
+                    </tr>`;
+                }).join('');
+                html += `
+                <table class="fill-table">
+                    <caption class="warn">🟡 需補填產品名單（約會已建立，請至 CRM 補上缺漏產品）</caption>
+                    <thead><tr><th>姓名</th><th>科別</th><th>預計產品</th><th>缺漏 / 備註</th><th>截圖</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
+            }
+
+            if (failed.length) {
+                const rows = failed.map(f => `<tr>
+                    <td>${escHtml(f.name)}</td>
+                    <td>${escHtml(f.dept)}</td>
+                    <td>${escHtml((f.error || '').slice(0, 120))}</td>
+                    <td>${f.orphan
+                        ? '<span class="missing-code">⚠️ 約會可能已存入 CRM，請檢查避免重複建立</span>'
+                        : '約會未建立，需整筆補填'}</td>
+                </tr>`).join('');
+                html += `
+                <table class="fill-table">
+                    <caption class="bad">❌ 失敗名單（需手動處理）</caption>
+                    <thead><tr><th>姓名</th><th>科別</th><th>原因</th><th>備註</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
+            }
+
+            if (!partial.length && !failed.length) {
+                html += `<div class="fill-report-allgood">🎉 全部 ${complete.length} 筆完整填寫，不需回 CRM 巡查。</div>`;
+            }
+
+            card.innerHTML = html;
+            document.getElementById('fillReportSection').classList.add('visible');
+        }
+
         function updateProgress(percent, current, total) {
             document.getElementById('progressBarFill').style.width = `${percent}%`;
             document.getElementById('progressText').textContent = total ? `${percent}% (${current}/${total})` : `${percent}%`;
@@ -1067,8 +1141,10 @@
             document.getElementById('visitInput').value = '';
             document.getElementById('resultsSection').classList.remove('visible');
             document.getElementById('executionSection').classList.remove('visible');
+            document.getElementById('fillReportSection').classList.remove('visible');
             document.getElementById('statusBar').classList.remove('visible');
             document.getElementById('resultsContainer').innerHTML = '';
+            document.getElementById('fillReportCard').innerHTML = '';
             document.getElementById('btnExecute').disabled = true;
             if (pollInterval) clearInterval(pollInterval);
             parsedEntries = [];

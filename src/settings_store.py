@@ -18,7 +18,7 @@ SETTINGS_FILE_NAME = "settings.json"
 DEFAULT_CRM_BASE_URL = "https://crm.synmosa.com.tw/SYNCRM/main.aspx#187829805/"
 
 REQUIRED_FIELDS = ("crm_base_url", "crm_username", "crm_password")
-SECRET_FIELDS = ("crm_password", "line_notify_token")
+SECRET_FIELDS = ("crm_password",)
 
 
 def settings_path() -> Path:
@@ -49,7 +49,6 @@ def load_saved_settings() -> dict[str, Any]:
         "crm_base_url": _as_text(data.get("crm_base_url")),
         "crm_username": _as_text(data.get("crm_username")),
         "crm_password": _decode_secret(data.get("crm_password")),
-        "line_notify_token": _decode_secret(data.get("line_notify_token")),
         "headless": _as_bool(data.get("headless"), default=False),
     }
 
@@ -91,7 +90,6 @@ def get_effective_settings() -> dict[str, Any]:
         "crm_base_url": saved["crm_base_url"] or os.getenv("CRM_BASE_URL", DEFAULT_CRM_BASE_URL),
         "crm_username": saved["crm_username"] or os.getenv("CRM_USERNAME", ""),
         "crm_password": saved["crm_password"] or os.getenv("CRM_PASSWORD", ""),
-        "line_notify_token": saved["line_notify_token"] or os.getenv("LINE_NOTIFY_TOKEN", ""),
         "headless": saved["headless"] if "headless" in saved else _env_headless(),
     }
 
@@ -106,10 +104,8 @@ def get_public_settings() -> dict[str, Any]:
         "crm_base_url": saved["crm_base_url"] or _as_text(os.getenv("CRM_BASE_URL", DEFAULT_CRM_BASE_URL)),
         "crm_username": saved["crm_username"] or _as_text(os.getenv("CRM_USERNAME")),
         "crm_password": "",
-        "line_notify_token": "",
         "headless": effective["headless"],
         "has_password": bool(effective["crm_password"]),
-        "has_line_notify_token": bool(effective["line_notify_token"]),
         "is_configured": not missing,
         "missing_fields": missing,
         "settings_path": str(settings_path()),
@@ -127,7 +123,6 @@ def _empty_settings() -> dict[str, Any]:
         "crm_base_url": "",
         "crm_username": "",
         "crm_password": "",
-        "line_notify_token": "",
         "headless": False,
     }
 
