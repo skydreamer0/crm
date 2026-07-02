@@ -6,6 +6,7 @@ import base64
 import ctypes
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -83,7 +84,7 @@ def save_settings(payload: dict[str, Any]) -> dict[str, Any]:
 
 def get_effective_settings() -> dict[str, Any]:
     """Merge saved settings over .env/environment fallback values."""
-    load_dotenv()
+    _load_dotenv_for_source_runtime()
     saved = load_saved_settings()
 
     return {
@@ -160,6 +161,11 @@ def _as_bool(value: Any, default: bool) -> bool:
 
 def _env_headless() -> bool:
     return os.getenv("HEADLESS", "false").strip().lower() == "true"
+
+
+def _load_dotenv_for_source_runtime() -> None:
+    if not getattr(sys, "frozen", False):
+        load_dotenv()
 
 
 def _encode_secret(value: str) -> dict[str, str]:

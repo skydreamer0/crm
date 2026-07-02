@@ -46,3 +46,36 @@ def test_resolve_runtime_settings_keeps_environment_fallback(monkeypatch):
     assert settings["password"] == "env-pass"
     assert settings["line_notify_token"] == "env-line"
     assert settings["headless"] is True
+
+
+def test_frozen_runtime_settings_do_not_load_parent_dotenv(monkeypatch, tmp_path):
+    from create_appointments import resolve_runtime_settings
+
+    app_dir = tmp_path / "release" / "CRM-Automation"
+    app_dir.mkdir(parents=True)
+    (tmp_path / ".env").write_text(
+        "\n".join(
+            [
+                "CRM_USERNAME=packaged-env-user",
+                "CRM_PASSWORD=packaged-env-password",
+                "LINE_NOTIFY_TOKEN=packaged-env-token",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    for name in (
+        "CRM_USERNAME",
+        "CRM_PASSWORD",
+        "LINE_NOTIFY_TOKEN",
+        "HEADLESS",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.chdir(app_dir)
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+
+    settings = resolve_runtime_settings()
+
+    assert settings["username"] is None
+    assert settings["password"] is None
+    assert settings["line_notify_token"] is None

@@ -19,6 +19,7 @@ import os
 import random
 import re
 import logging
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -32,7 +33,16 @@ logger = logging.getLogger(__name__)
 # Config loading
 # ---------------------------------------------------------------------------
 
-_CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
+
+def _resource_path(relative_path: str) -> Path:
+    """Resolve files both from source and from a PyInstaller bundle."""
+    bundle_dir = getattr(sys, "_MEIPASS", None)
+    if bundle_dir:
+        return Path(bundle_dir) / relative_path
+    return Path(__file__).resolve().parent.parent / relative_path
+
+
+_CONFIG_DIR = _resource_path("config")
 
 
 def _load_yaml(filename: str) -> dict:

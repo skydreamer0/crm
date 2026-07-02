@@ -123,3 +123,29 @@ def test_settings_path_uses_appdata_style_directory(monkeypatch, tmp_path):
 
     expected = tmp_path / "crm-automation" / "settings.json"
     assert settings_path() == expected
+
+
+def test_frozen_app_does_not_load_parent_dotenv(monkeypatch, tmp_path):
+    from settings_store import get_effective_settings
+
+    app_dir = tmp_path / "release" / "CRM-Automation"
+    app_dir.mkdir(parents=True)
+    (tmp_path / ".env").write_text(
+        "\n".join(
+            [
+                "CRM_USERNAME=packaged-env-user",
+                "CRM_PASSWORD=packaged-env-password",
+                "LINE_NOTIFY_TOKEN=packaged-env-token",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.chdir(app_dir)
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+
+    effective = get_effective_settings()
+
+    assert effective["crm_username"] == ""
+    assert effective["crm_password"] == ""
+    assert effective["line_notify_token"] == ""

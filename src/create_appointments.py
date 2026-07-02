@@ -183,7 +183,7 @@ async def reliable_save(target_page, label: str = "記錄", timeout: int = 15000
 
 def resolve_runtime_settings(settings: dict | None = None) -> dict:
     """Resolve automation settings, letting explicit app settings override .env."""
-    load_dotenv()
+    _load_dotenv_for_source_runtime()
     settings = settings or {}
     headless_value = settings.get("headless")
     if headless_value is None:
@@ -199,6 +199,11 @@ def resolve_runtime_settings(settings: dict | None = None) -> dict:
         "line_notify_token": settings.get("line_notify_token") or os.getenv("LINE_NOTIFY_TOKEN"),
         "headless": headless,
     }
+
+
+def _load_dotenv_for_source_runtime() -> None:
+    if not getattr(sys, "frozen", False):
+        load_dotenv()
 
 
 def send_line_notify(message: str, token: str | None = None):
