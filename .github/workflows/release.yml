@@ -1,0 +1,55 @@
+name: release
+
+# 推送 v 開頭的 tag 即觸發: git tag v1.0.0 && git push origin v1.0.0
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # 建立 GitHub Release 需要
+
+env:
+  # 讓 Chromium 安裝進 playwright 套件目錄，PyInstaller hook 才會收進 bundle。
+  # 打包與安裝步驟都需要這個變數，故設在 job 層級。
+  PLAYWRIGHT_BROWSERS_PATH: "0"
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt pyinstaller pytest
+
+      - name: Install Chromium into playwright package
+        run: python -m playwright install chromium
+
+      - name: Run tests
+        run: python -m pytest tests/ -q
+
+      - name: Build with PyInstaller
+        run: python -m PyInstaller crm_automation.spec --noconfirm
+
+      - name: Package zip
+        run: Compress-Archive -Path dist/CRM-Automation -DestinationPath "dist/CRM-Automation-${{ github.ref_name }}-windows.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/CRM-Automation-${{ github.ref_name }}-windows.zip
+          generate_release_notes: true
+          body: |
+            ## 安裝方式（Windows）
+            1. 下載下方的 `CRM-Automation-${{ github.ref_name }}-windows.zip`
+            2. 解壓縮到任意資料夾
+            3. 執行 `CRM-Automation.exe`，瀏覽器會自動開啟操作介面
+            4. 第一次使用請先點右上角「⚙️ 設定」填入 CRM 網址與帳號密碼
+
+            無須安裝 Python 或瀏覽器，所有相依已包含在 zip 內。
+            詳細說明見 [docs/RELEASE.md](https://github.com/${{ github.repository }}/blob/main/docs/RELEASE.md)
