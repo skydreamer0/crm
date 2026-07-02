@@ -54,3 +54,9 @@ crm:
 
     # 拜訪目的
     visit_purpose: "div#new_visitpurpose"
+
+    # 產品明細 subgrid 驗證 (填寫後讀取 CRM 實際記錄數)
+    # 狀態列「共 N 個」計數器 (依 2026-04 DOM dump: span#core_ItemsTotal)
+    subgrid_total: "span#core_ItemsTotal"
+    # 資料列 fallback (計數器讀不到時直接數列)
+    subgrid_rows: "div#core_divDataArea tr.ms-crm-List-Row"

@@ -20,8 +20,15 @@ import os
 import json
 import random
 import asyncio
+import datetime
 import threading
+from collections import deque
 from pathlib import Path
+
+# 打包版將 Chromium 一併收在 bundle 內 (見 crm_automation.spec)，
+# 需在 import playwright 之前指定從套件目錄尋找瀏覽器
+if getattr(sys, "frozen", False):
+    os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", "0")
 
 # === 第三方套件 ===
 from flask import Flask, render_template, request, jsonify
@@ -57,21 +64,54 @@ def _resource_path(relative_path: str) -> Path:
 app = Flask(__name__, template_folder=str(_resource_path("templates")))
 
 # ---------------------------------------------------------------------------
-# Shared automation state (thread-safe via GIL for simple dict updates)
+# Shared automation state (protected by _state_lock)
 # ---------------------------------------------------------------------------
+MAX_PROGRESS_ENTRIES = 500   # progress 有界限，避免長時間執行時記憶體增長
+MAX_TEXT_LENGTH = 20000      # 待訪名單文字上限
+
+_state_lock = threading.Lock()
+_cancel_event = threading.Event()
 _automation_state = {
     "running": False,
-    "progress": [],      # list of progress dicts from the callback
+    "progress": deque(maxlen=MAX_PROGRESS_ENTRIES),  # progress dicts from the callback
     "error": None,
     "result": None,
+    "summary": None,     # 最終檢核報告 (complete / partial / failed / cancelled)
 }
 
 
-def _reset_state():
-    _automation_state["running"] = False
-    _automation_state["progress"] = []
+def _reset_state_locked():
+    """Reset state fields. Caller must hold _state_lock."""
+    _automation_state["progress"] = deque(maxlen=MAX_PROGRESS_ENTRIES)
     _automation_state["error"] = None
     _automation_state["result"] = None
+    _automation_state["summary"] = None
+
+
+def _snapshot_state() -> dict:
+    """Return a JSON-serializable copy of the automation state."""
+    with _state_lock:
+        return {
+            "running": _automation_state["running"],
+            "progress": list(_automation_state["progress"]),
+            "error": _automation_state["error"],
+            "result": _automation_state["result"],
+            "summary": _automation_state["summary"],
+        }
+
+
+def _validate_visit_text(data) -> tuple[str, str | None]:
+    """Validate the raw visit-list text. Returns (text, error_message)."""
+    if not isinstance(data, dict):
+        return "", "請提供 JSON 物件"
+    raw_text = data.get("text", "")
+    if not isinstance(raw_text, str):
+        return "", "text 欄位必須是文字"
+    if len(raw_text) > MAX_TEXT_LENGTH:
+        return "", f"名單文字過長 (上限 {MAX_TEXT_LENGTH} 字元)"
+    if not raw_text.strip():
+        return "", "請輸入待訪名單"
+    return raw_text, None
 
 
 # ---------------------------------------------------------------------------
@@ -83,6 +123,12 @@ def _reset_state():
 def index():
     """Serve the main GUI page."""
     return render_template("index.html")
+
+
+@app.route("/settings")
+def settings_page():
+    """Serve the standalone settings page."""
+    return render_template("settings.html")
 
 
 @app.route("/api/settings", methods=["GET"])
@@ -109,11 +155,10 @@ def api_parse():
     Response (JSON):
         { "entries": [ { ... }, ... ] }
     """
-    data = request.get_json(force=True)
-    raw_text = data.get("text", "")
-
-    if not raw_text.strip():
-        return jsonify({"entries": [], "error": "請輸入待訪名單"}), 400
+    data = request.get_json(force=True, silent=True)
+    raw_text, text_error = _validate_visit_text(data)
+    if text_error:
+        return jsonify({"entries": [], "error": text_error}), 400
 
     entries = parse_visit_list(raw_text)
     results = []
@@ -158,14 +203,21 @@ def api_execute():
     Response (JSON):
         { "status": "started", "message": "..." }
     """
-    if _automation_state["running"]:
-        return jsonify({"status": "busy", "message": "自動化正在執行中，請稍後再試。"}), 409
+    data = request.get_json(force=True, silent=True)
+    raw_text, text_error = _validate_visit_text(data)
+    if text_error:
+        return jsonify({"status": "error", "message": text_error}), 400
 
-    data = request.get_json(force=True)
-    raw_text = data.get("text", "")
-
-    if not raw_text.strip():
-        return jsonify({"status": "error", "message": "沒有待執行的項目"}), 400
+    run_date = data.get("date")
+    if run_date is not None:
+        if not isinstance(run_date, str):
+            return jsonify({"status": "error", "message": "date 欄位必須是文字"}), 400
+        run_date = run_date.strip() or None
+        if run_date is not None:
+            try:
+                datetime.date.fromisoformat(run_date)
+            except ValueError:
+                return jsonify({"status": "error", "message": "日期格式錯誤，請使用 YYYY-MM-DD"}), 400
 
     settings = get_effective_settings()
     missing_fields = validate_effective_settings(settings)
@@ -182,32 +234,40 @@ def api_execute():
     if not entries:
         return jsonify({"status": "error", "message": "名單解析失敗，請檢查格式"}), 400
 
-    # Reset & start
-    _reset_state()
-    _automation_state["running"] = True
+    # 原子性檢查 busy 並佔用執行權，避免兩個請求同時通過檢查
+    with _state_lock:
+        if _automation_state["running"]:
+            return jsonify({"status": "busy", "message": "自動化正在執行中，請稍後再試。"}), 409
+        _reset_state_locked()
+        _automation_state["running"] = True
+    _cancel_event.clear()
 
     def progress_cb(msg):
-        _automation_state["progress"].append(msg)
+        with _state_lock:
+            _automation_state["progress"].append(msg)
 
     def _run_in_thread():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
-            loop.run_until_complete(
+            # asyncio.run 統一處理 event loop 的建立、例外清理與關閉
+            summary = asyncio.run(
                 run_automation(
                     entries,
-                    run_date=data.get("date"),
+                    run_date=run_date,
                     progress_callback=progress_cb,
                     settings=settings,
+                    cancel_event=_cancel_event,
                 )
             )
-            _automation_state["result"] = "success"
+            with _state_lock:
+                _automation_state["summary"] = summary
+                _automation_state["result"] = "success"
         except Exception as e:
-            _automation_state["error"] = str(e)
-            _automation_state["result"] = "error"
+            with _state_lock:
+                _automation_state["error"] = str(e)
+                _automation_state["result"] = "error"
         finally:
-            _automation_state["running"] = False
-            loop.close()
+            with _state_lock:
+                _automation_state["running"] = False
 
     t = threading.Thread(target=_run_in_thread, daemon=True)
     t.start()
@@ -218,15 +278,35 @@ def api_execute():
     })
 
 
+@app.route("/api/cancel", methods=["POST"])
+def api_cancel():
+    """
+    Request cancellation of the running automation.
+
+    目前這筆約會會處理完才停止，未執行的筆數列入失敗名單 (原因: 使用者取消)。
+    """
+    with _state_lock:
+        running = _automation_state["running"]
+    if not running:
+        return jsonify({"status": "idle", "message": "目前沒有執行中的自動化"}), 409
+
+    _cancel_event.set()
+    return jsonify({
+        "status": "cancelling",
+        "message": "已送出取消請求，目前這筆處理完後停止。",
+    })
+
+
 @app.route("/api/status")
 def api_status():
     """
     Poll automation progress.
 
     Response (JSON):
-        { "running": bool, "progress": [...], "result": "success"|"error"|null, "error": str|null }
+        { "running": bool, "progress": [...], "result": "success"|"error"|null,
+          "error": str|null, "summary": {...}|null }
     """
-    return jsonify(_automation_state)
+    return jsonify(_snapshot_state())
 
 
 # ---------------------------------------------------------------------------

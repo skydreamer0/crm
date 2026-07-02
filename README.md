@@ -10,7 +10,10 @@
 - **資料處理**: Pandas / PyYAML
 - **配置管理**: `.env` 環境變數 + YAML 設定檔
 
-## 快速開始
+## 下載使用（一般使用者，免安裝）
+到 GitHub **Releases** 頁面下載最新的 `CRM-Automation-vX.X.X-windows.zip`，解壓後執行 `CRM-Automation.exe` 即可，不需要安裝 Python 或瀏覽器。詳細說明與打包/發佈流程見 [docs/RELEASE.md](docs/RELEASE.md)。
+
+## 快速開始（開發者）
 1. 建立虛擬環境: `python -m venv venv`
 2. 啟用虛擬環境: `source venv/bin/activate`
 3. 安裝依賴: `pip install -r requirements.txt`
