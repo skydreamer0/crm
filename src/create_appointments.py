@@ -84,6 +84,7 @@ TIMING = {
     "autocomplete":    500,   # 等 autocomplete 下拉出現 (400→500)
     "dropdown":        400,   # 下拉選單操作 (300→400)
     "iframe_ready":    500,   # iframe 內容載入後的緩衝 (300→500)
+    "product_form_bind": 1500,  # 產品欄位可見後等 CRM JS 綁定 autocomplete 的緩衝
     # --- 儲存 / 頁面切換 ---
     "after_save":      2000,  # 儲存按鈕點擊後 (1500→2000)
     "page_transition": 800,   # 頁面切換後的緩衝 (500→800)
@@ -199,6 +200,22 @@ async def count_product_subgrid_rows(popup_page, expected: int, timeout: int = 1
         if asyncio.get_running_loop().time() >= deadline:
             return last_count
         await asyncio.sleep(1)
+
+
+async def close_popup_quietly(popup) -> None:
+    """安全關閉 popup 視窗: 接受 None、已關閉視窗與 close() 本身的例外。
+
+    產品流程中斷時 (例如 lookup 未解析) 必須把殘留的產品視窗收掉，
+    否則會干擾同一筆約會的下一個產品操作。
+    """
+    if popup is None:
+        return
+    try:
+        if not popup.is_closed():
+            await popup.close()
+    except Exception:
+        # Target closed 等例外代表 CRM 已自行關閉，忽略即可
+        pass
 
 
 async def reliable_save(target_page, label: str = "記錄", timeout: int = 15000):
@@ -615,9 +632,182 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None, st
     # 這裡不再執行「儲存後關閉」，保留 popup 開啟狀態，交由後續的產品填寫步驟處理。
 
 
+async def _attempt_add_product(popup_page, popup_frame, context, product_code: str, product_id: str) -> dict:
+    """
+    單次嘗試在已儲存的約會記錄中新增一項產品。
+
+    Returns:
+        儲存階段的結果 {"code", "ok", "error"}。
+
+    Raises:
+        儲存之前的任何失敗 (新增按鈕不見、下拉選單不出現、lookup 未解析)
+        會先關閉殘留的產品視窗再 raise。此時尚未按下儲存，
+        呼叫端可以安全重試，不會產生重複的產品明細。
+    """
+    product_popup = None
+    try:
+        # 點擊「新增 日報 - 產品介紹明細」按鈕
+        logger.info("      呼叫產品新增視窗...")
+        add_prod_btn = popup_frame.locator(SEL['product']['add_product_button'])
+        # 先確認按鈕可見 (30s 而非預設 300s)
+        try:
+            await add_prod_btn.wait_for(state="visible", timeout=30000)
+        except Exception:
+            logger.warning("      ⚠️ 產品新增按鈕 30 秒內未出現，嘗試重新儲存約會記錄...")
+            await reliable_save(popup_page, label="約會記錄(重試)", timeout=10000)
+            # 重新取得 iframe
+            try:
+                refreshed = await popup_page.wait_for_selector(
+                    SEL['common']['content_iframe'], timeout=10000
+                )
+                popup_frame = await refreshed.content_frame()
+                add_prod_btn = popup_frame.locator(SEL['product']['add_product_button'])
+                await add_prod_btn.wait_for(state="visible", timeout=15000)
+            except Exception as retry_e:
+                logger.error(f"      ❌ 重試後仍找不到產品新增按鈕: {retry_e}")
+                raise
+
+        async with context.expect_page() as new_page_info:
+            await add_prod_btn.click(timeout=10000)
+
+        product_popup = await new_page_info.value
+        await product_popup.wait_for_load_state("domcontentloaded", timeout=15000)
+
+        # 取得 product popup 內的表單 iframe
+        prod_iframe_element = await product_popup.wait_for_selector(SEL['common']['content_iframe'], timeout=15000)
+        prod_frame = await prod_iframe_element.content_frame()
+        # 等產品輸入欄真正出現
+        await prod_frame.wait_for_selector(
+            SEL['product']['product_input'], state="visible", timeout=20000
+        )
+        # 「可見」不代表 CRM JS 已接管欄位：等 data-initialized 出現
+        # (由 CRM 的控制項初始化程式設定，代表 lookup 行為已綁定)
+        try:
+            await prod_frame.wait_for_selector(
+                SEL['product']['product_ready'], state="attached", timeout=10000
+            )
+        except Exception:
+            logger.warning("      ⚠️ 產品欄位 data-initialized 逾時，僅以固定緩衝繼續")
+        # 行為綁定後仍保留緩衝，讓 autocomplete 事件掛載完成
+        await product_popup.wait_for_timeout(TIMING['product_form_bind'])
+
+        logger.info("      輸入產品編號搜尋...")
+        prod_input = prod_frame.locator(SEL['product']['product_input'])
+        await prod_input.click()
+        await product_popup.wait_for_timeout(TIMING['after_click'])
+
+        dropdown_appeared = False
+        for attempt in range(3):
+            if attempt > 0:
+                logger.warning(f"      ⚠️ 等待下拉選單超時，重新輸入產品 (第 {attempt} 次重試)...")
+                await prod_input.click()
+                await product_popup.keyboard.press("Control+A")
+                await product_popup.keyboard.press("Backspace")
+                await product_popup.wait_for_timeout(500)
+
+            # 逐鍵輸入: keyboard.type 會發出 keydown/keyup 觸發 CRM autocomplete，
+            # insert_text 只發 input 事件，autocomplete 不會啟動
+            await product_popup.keyboard.type(product_id, delay=TIMING['type_delay'])
+            # 等待自動完成的後端查詢稍微跑一下再按 Enter
+            await product_popup.wait_for_timeout(1000 + attempt * 1000)
+            await product_popup.keyboard.press("Enter")
+
+            # 等待下拉選單出現 (smart wait)
+            logger.info("      等待並確認選項...")
+            try:
+                await prod_frame.wait_for_selector(SEL['product']['product_dropdown_menu'], timeout=10000 + attempt * 5000)
+                dropdown_appeared = True
+                break
+            except Exception:
+                pass
+
+        if not dropdown_appeared:
+            logger.warning("      ⚠️ 無法載入產品下拉選單 (已超過重試次數)，將嘗試強行繼續")
+
+        await product_popup.wait_for_timeout(TIMING['dropdown'])
+        await product_popup.keyboard.press("Enter")
+        await product_popup.wait_for_timeout(TIMING['dropdown'])
+
+        # --- 產品選完後，用 Tab 離開產品欄位讓 CRM 確認選取 ---
+        await product_popup.keyboard.press("Tab")
+        await product_popup.wait_for_timeout(TIMING['autocomplete'])
+
+        product_selected = await wait_for_resolved_lookup(
+            prod_frame,
+            "new_product",
+            product_id,
+            timeout=8000,
+        )
+        if not product_selected:
+            raise Exception(f"產品 lookup 未解析，停止儲存避免空白產品: {product_id}")
+
+        logger.info("      填寫拜訪目的...")
+        try:
+            purpose_sel = SEL['product']['visit_purpose']
+            purpose_field = prod_frame.locator(purpose_sel).first
+            await purpose_field.click(timeout=5000)
+            await product_popup.wait_for_timeout(TIMING['after_click'])
+
+            purpose_text = random.choice(["上量", "了解需求"])
+            await product_popup.keyboard.insert_text(purpose_text)
+            await product_popup.wait_for_timeout(TIMING['after_type'])
+
+            # Tab 離開讓 CRM 確認
+            await product_popup.keyboard.press("Tab")
+            await product_popup.wait_for_timeout(TIMING['key_press'])
+            logger.info(f"      ✅ 拜訪目的: {purpose_text}")
+        except Exception as e:
+            logger.warning(f"      ⚠️ 無法填寫拜訪目的: {e}")
+
+        if not should_skip_visit_content(product_code):
+            logger.info("      填寫拜訪內容 (選第一個)...")
+            try:
+                # 捲動到底部確保可見
+                await prod_frame.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                await product_popup.wait_for_timeout(TIMING['after_click'])
+
+                item_sel = SEL['product']['visit_item']
+                visit_item_field = prod_frame.locator(item_sel).first
+                await visit_item_field.scroll_into_view_if_needed()
+                await visit_item_field.click(timeout=5000)
+                await product_popup.wait_for_timeout(TIMING['after_click'])
+
+                # 展開 lookup 下拉 (Enter)
+                await product_popup.keyboard.press("Enter")
+                await product_popup.wait_for_timeout(TIMING['dropdown'])
+
+                # 固定選第一個選項
+                await product_popup.keyboard.press("ArrowDown")
+                await product_popup.wait_for_timeout(TIMING['key_press'])
+                await product_popup.keyboard.press("Enter")
+                await product_popup.wait_for_timeout(TIMING['key_press'])
+                logger.info("      ✅ 已選取拜訪內容 (第一項)")
+            except Exception as e:
+                logger.warning(f"      ⚠️ 無法填寫拜訪內容: {e}")
+        else:
+            logger.info("      ⏭️ 已設定跳過拜訪內容")
+    except Exception:
+        # 儲存前失敗: 收掉殘留的產品視窗，交給呼叫端決定是否重試
+        await close_popup_quietly(product_popup)
+        raise
+
+    # 儲存並關閉產品 Popup — 走到這裡代表 lookup 已確認選上。
+    # 儲存階段的異常不 raise (CRM 可能已存入，重試會產生重複明細)。
+    logger.info("      儲存該產品...")
+    try:
+        await reliable_save(product_popup, label="產品", timeout=15000)
+        # 手動關閉視窗 (因為是點儲存而不是儲存並關閉；CRM 若已自行關閉也安全)
+        await close_popup_quietly(product_popup)
+        logger.info(f"    ✅ 產品 {product_code} 儲存並關閉完成")
+        return {"code": product_code, "ok": True, "error": None}
+    except Exception as e:
+        logger.warning(f"      ⚠️ 產品儲存發生異常: {e}")
+        await close_popup_quietly(product_popup)
+        return {"code": product_code, "ok": False, "error": f"儲存異常: {e}"}
+
+
 # =========================================================================
 #  add_products — 產品選取 (在約會已儲存後、獨立操作)
-#  TODO: 此功能獨立於基本填表流程。目前先註解，確認基本流程穩定後再啟用。
 # =========================================================================
 async def add_products_to_appointment(popup_page, popup_frame, context, entry: VisitEntry) -> dict:
     """
@@ -642,175 +832,38 @@ async def add_products_to_appointment(popup_page, popup_frame, context, entry: V
 
     for p_idx, product_code in enumerate(products_to_add):
         logger.info(f"    [{p_idx+1}/{len(products_to_add)}] 正在處理產品: {product_code}")
-        try:
-            product_id = resolve_crm_product_id(product_code, entry)
-            if not product_id:
-                logger.warning(f"      ⚠️ 無法解析產品編號，跳過: {product_code}")
-                results.append({"code": product_code, "ok": False, "error": "無法解析產品編號"})
-                continue
+        product_id = resolve_crm_product_id(product_code, entry)
+        if not product_id:
+            logger.warning(f"      ⚠️ 無法解析產品編號，跳過: {product_code}")
+            results.append({"code": product_code, "ok": False, "error": "無法解析產品編號"})
+            continue
 
-            logger.info(f"      產品編號: {product_id}")
+        logger.info(f"      產品編號: {product_id}")
 
-            # 點擊「新增 日報 - 產品介紹明細」按鈕
-            logger.info("      呼叫產品新增視窗...")
-            add_prod_btn = popup_frame.locator(SEL['product']['add_product_button'])
-            # 先確認按鈕可見 (30s 而非預設 300s)
+        result = None
+        for prod_attempt in range(2):
             try:
-                await add_prod_btn.wait_for(state="visible", timeout=30000)
-            except Exception:
-                logger.warning("      ⚠️ 產品新增按鈕 30 秒內未出現，嘗試重新儲存約會記錄...")
-                await reliable_save(popup_page, label="約會記錄(重試)", timeout=10000)
-                # 重新取得 iframe
-                try:
-                    refreshed = await popup_page.wait_for_selector(
-                        SEL['common']['content_iframe'], timeout=10000
-                    )
-                    popup_frame = await refreshed.content_frame()
-                    add_prod_btn = popup_frame.locator(SEL['product']['add_product_button'])
-                    await add_prod_btn.wait_for(state="visible", timeout=15000)
-                except Exception as retry_e:
-                    logger.error(f"      ❌ 重試後仍找不到產品新增按鈕: {retry_e}")
-                    raise
-
-            async with context.expect_page() as new_page_info:
-                await add_prod_btn.click(timeout=10000)
-
-            product_popup = await new_page_info.value
-            await product_popup.wait_for_load_state("domcontentloaded", timeout=15000)
-
-            # 取得 product popup 內的表單 iframe
-            prod_iframe_element = await product_popup.wait_for_selector(SEL['common']['content_iframe'], timeout=15000)
-            prod_frame = await prod_iframe_element.content_frame()
-            # 等產品輸入欄真正出現 (條件等待，取代原本固定 3 秒):
-            # CRM 慢時可等到 20 秒，CRM 快時立即繼續
-            await prod_frame.wait_for_selector(
-                SEL['product']['product_input'], state="visible", timeout=20000
-            )
-            # 欄位出現後仍需短暫緩衝讓 CRM JS 綁定 autocomplete 事件
-            await product_popup.wait_for_timeout(TIMING['iframe_ready'])
-
-            logger.info("      輸入產品編號搜尋...")
-            prod_input = prod_frame.locator(SEL['product']['product_input'])
-            await prod_input.click()
-            await product_popup.wait_for_timeout(TIMING['after_click'])
-
-            dropdown_appeared = False
-            for attempt in range(3):
-                if attempt > 0:
-                    logger.warning(f"      ⚠️ 等待下拉選單超時，重新輸入產品 (第 {attempt} 次重試)...")
-                    await prod_input.click()
-                    await product_popup.keyboard.press("Control+A")
-                    await product_popup.keyboard.press("Backspace")
-                    await product_popup.wait_for_timeout(500)
-
-                await product_popup.keyboard.insert_text(product_id)
-                # 等待自動完成的後端查詢稍微跑一下再按 Enter
-                await product_popup.wait_for_timeout(1000 + attempt * 1000)
-                await product_popup.keyboard.press("Enter")
-
-                # 等待下拉選單出現 (smart wait)
-                logger.info("      等待並確認選項...")
-                try:
-                    await prod_frame.wait_for_selector(SEL['product']['product_dropdown_menu'], timeout=10000 + attempt * 5000)
-                    dropdown_appeared = True
-                    break
-                except Exception:
-                    pass
-
-            if not dropdown_appeared:
-                 logger.warning("      ⚠️ 無法載入產品下拉選單 (已超過重試次數)，將嘗試強行繼續")
-                 
-            await product_popup.wait_for_timeout(TIMING['dropdown'])
-            await product_popup.keyboard.press("Enter")
-            await product_popup.wait_for_timeout(TIMING['dropdown'])
-
-            # --- 產品選完後，用 Tab 離開產品欄位讓 CRM 確認選取 ---
-            await product_popup.keyboard.press("Tab")
-            await product_popup.wait_for_timeout(TIMING['autocomplete'])
-
-            product_selected = await wait_for_resolved_lookup(
-                prod_frame,
-                "new_product",
-                product_id,
-                timeout=8000,
-            )
-            if not product_selected:
-                raise Exception(f"產品 lookup 未解析，停止儲存避免空白產品: {product_id}")
-
-            logger.info("      填寫拜訪目的...")
-            try:
-                purpose_sel = SEL['product']['visit_purpose']
-                purpose_field = prod_frame.locator(purpose_sel).first
-                await purpose_field.click(timeout=5000)
-                await product_popup.wait_for_timeout(TIMING['after_click'])
-
-                purpose_text = random.choice(["上量", "了解需求"])
-                await product_popup.keyboard.insert_text(purpose_text)
-                await product_popup.wait_for_timeout(TIMING['after_type'])
-
-                # Tab 離開讓 CRM 確認
-                await product_popup.keyboard.press("Tab")
-                await product_popup.wait_for_timeout(TIMING['key_press'])
-                logger.info(f"      ✅ 拜訪目的: {purpose_text}")
+                if prod_attempt > 0:
+                    logger.warning(f"    🔁 產品 {product_code} 儲存前失敗，重試一次...")
+                    # 等約會表單穩定並重新取得 iframe (殘留視窗已在 raise 前收掉)
+                    await popup_page.wait_for_timeout(2000)
+                    try:
+                        refreshed = await popup_page.wait_for_selector(
+                            SEL['common']['content_iframe'], timeout=15000
+                        )
+                        frame = await refreshed.content_frame()
+                        if frame:
+                            popup_frame = frame
+                    except Exception:
+                        pass
+                result = await _attempt_add_product(
+                    popup_page, popup_frame, context, product_code, product_id
+                )
+                break
             except Exception as e:
-                logger.warning(f"      ⚠️ 無法填寫拜訪目的: {e}")
-
-            if not should_skip_visit_content(product_code):
-                logger.info("      填寫拜訪內容 (選第一個)...")
-                try:
-                    # 捲動到底部確保可見
-                    await prod_frame.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                    await product_popup.wait_for_timeout(TIMING['after_click'])
-
-                    item_sel = SEL['product']['visit_item']
-                    visit_item_field = prod_frame.locator(item_sel).first
-                    await visit_item_field.scroll_into_view_if_needed()
-                    await visit_item_field.click(timeout=5000)
-                    await product_popup.wait_for_timeout(TIMING['after_click'])
-
-                    # 展開 lookup 下拉 (Enter)
-                    await product_popup.keyboard.press("Enter")
-                    await product_popup.wait_for_timeout(TIMING['dropdown'])
-
-                    # 固定選第一個選項
-                    await product_popup.keyboard.press("ArrowDown")
-                    await product_popup.wait_for_timeout(TIMING['key_press'])
-                    await product_popup.keyboard.press("Enter")
-                    await product_popup.wait_for_timeout(TIMING['key_press'])
-                    logger.info("      ✅ 已選取拜訪內容 (第一項)")
-                except Exception as e:
-                    logger.warning(f"      ⚠️ 無法填寫拜訪內容: {e}")
-            else:
-                logger.info("      ⏭️ 已設定跳過拜訪內容")
-
-
-            # 4. 儲存並關閉產品 Popup
-            logger.info("      儲存該產品...")
-            try:
-                await reliable_save(product_popup, label="產品", timeout=15000)
-                
-                try:
-                    # 手動關閉視窗 (因為是點儲存而不是儲存並關閉)
-                    if not product_popup.is_closed():
-                        await product_popup.close()
-                except Exception:
-                    # Target closed 意味著 CRM 幫忙關閉了，這也算成功
-                    pass
-                    
-                logger.info(f"    ✅ 產品 {product_code} 儲存並關閉完成")
-                results.append({"code": product_code, "ok": True, "error": None})
-            except Exception as e:
-                logger.warning(f"      ⚠️ 產品儲存發生異常: {e}")
-                results.append({"code": product_code, "ok": False, "error": f"儲存異常: {e}"})
-                try:
-                    if not product_popup.is_closed():
-                        await product_popup.close()
-                except Exception:
-                    pass
-
-        except Exception as e:
-            logger.warning(f"    ⚠️ 處理產品 {product_code} 時發生異常: {e}")
-            results.append({"code": product_code, "ok": False, "error": str(e)})
+                logger.warning(f"    ⚠️ 處理產品 {product_code} 時發生異常 (嘗試 {prod_attempt+1}/2): {e}")
+                result = {"code": product_code, "ok": False, "error": str(e)}
+        results.append(result)
 
         # === 產品間等待: 讓約會表單的 subgrid (產品明細列表) 完成背景重整 ===
         # 儲存第一項產品後，CRM 會自動 reload 約會表單的 iframe，
