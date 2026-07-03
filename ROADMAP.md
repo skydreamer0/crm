@@ -116,3 +116,18 @@
 - [x] 打包發佈流程 (2026-07-02)：`crm_automation.spec`（含 Chromium bundle）、`scripts/build_release.ps1` 本地打包、GitHub Actions（`ci.yml` 測試 + `release.yml` tag 觸發自動建置發佈）、`docs/RELEASE.md` 含給使用者的安裝說明
 - [ ] Web UI 歷史查詢頁（讀 `logs/history`，看過去執行結果與補填名單）
 - [ ] **L5/L6** pre-commit hooks 與 type hints（順手做）
+
+## 第八階段：醫院 x 科別 SKU 矩陣設定 (Planned 2026-07-03)
+
+> 目標：讓產品選取改以 SKU 為最小單位，並可針對每間醫院、每個科別鎖定實際要建立的 CRM 產品。
+
+- [x] Mock 驗證：選定 Variant B「醫院 x 科別矩陣」作為設定頁主介面方向
+- [ ] 將 `product_catalog.yaml` 的 ELI 從動態規則拆成明確 SKU：`eli_7_5` / `eli_22_5` / `eli_45`
+- [ ] 讓待訪名單解析結果保存醫院欄位，支援 `醫院/科別/客戶/等級` 格式
+- [ ] 在 per-user settings 中儲存 `hospital_product_rules`
+- [ ] 產品解析順序改為：醫院+科別 locked 規則 → 科別預設 fallback → CRM product id
+- [ ] 設定頁新增矩陣式 rule editor，支援 locked/fallback、SKU 勾選、備註
+- [ ] `/api/parse` 預覽與 CRM automation 共用同一個 SKU resolver
+- [ ] 補齊 parser、settings store、settings API、automation product id 測試
+
+計畫文件：`docs/plans/2026-07-03-hospital-department-sku-matrix.md`
