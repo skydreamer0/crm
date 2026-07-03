@@ -47,6 +47,9 @@ crm:
 
     # 產品搜尋欄位
     product_input: "div#new_product"
+    # 就緒訊號: CRM JS 綁定完 lookup 行為後才會加上 data-initialized="true"
+    # (依 docs/product_fields/product_popup_frame_1.html:4394 實際 DOM)
+    product_ready: "div#new_product[data-initialized='true']"
     product_dropdown_menu: "ul#new_product_i_IMenu"
 
     # 拜訪內容 (實際 DOM id 為 new_callnotes)
