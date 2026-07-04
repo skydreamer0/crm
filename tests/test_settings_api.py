@@ -55,10 +55,73 @@ def test_settings_page_is_served_separately_from_index(client):
     html = response.get_data(as_text=True)
     assert "settingsBaseUrl" in html
     assert "返回主頁" in html
+    assert 'href="/settings/products"' in html
 
     index_html = client.get("/").get_data(as_text=True)
     assert "settingsBaseUrl" not in index_html  # 設定表單已移出主頁
     assert "/settings" in index_html  # 主頁保留設定頁連結
+
+
+def test_product_rules_page_is_available_from_settings(client):
+    response = client.get("/settings/products")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "醫院產品矩陣" in html
+    # 頁面是 API 驅動：從 /api/product-config 讀公司產品、/api/settings 讀個人醫院規則
+    assert "/api/product-config" in html
+    assert "hospital_product_rules" in html
+    assert "新增醫院" in html
+    assert "settings_product_rules_prototype" not in html
+
+
+def test_product_config_exposes_sku_catalog(client):
+    response = client.get("/api/product-config")
+
+    assert response.status_code == 200
+    data = response.get_json()
+
+    products = {p["code"]: p for p in data["products"]}
+    assert products["eli_45"]["crm_product_id"] == "T5EL2"
+    assert products["eli_22_5"]["crm_product_id"] == "T5EL1"
+    assert products["eli_7_5"]["crm_product_id"] == "T5EL0"
+    assert "eli" not in products  # 品牌層級的 eli 已拆成 SKU
+
+    departments = {d["code"]: d for d in data["departments"]}
+    assert departments["URO"]["default_products"] == ["uri", "eli_22_5", "oxb"]
+    assert departments["PED"]["default_products"] == ["eli_45", "oxb"]
+
+
+def test_parse_applies_locked_hospital_rules(client):
+    save = client.post(
+        "/api/settings",
+        json={
+            "hospital_product_rules": {
+                "skh": {
+                    "name": "新光醫院",
+                    "aliases": ["新光"],
+                    "departments": {
+                        "URO": {"mode": "locked", "products": ["uri", "eli_45"], "note": ""}
+                    },
+                }
+            }
+        },
+    )
+    assert save.status_code == 200
+
+    response = client.post("/api/parse", json={"text": "新光/URO/蔡醫師/A\n馬偕/URO/王小明/A"})
+
+    assert response.status_code == 200
+    entries = response.get_json()["entries"]
+
+    locked = entries[0]
+    assert locked["hospital_name"] == "新光"
+    assert locked["products_locked"] is True
+    assert [p["code"] for p in locked["selected_products"]] == ["uri", "eli_45"]
+
+    fallback = entries[1]
+    assert fallback["products_locked"] is False
+    assert [p["code"] for p in fallback["selected_products"]] == ["uri", "eli_22_5"]
 
 
 def test_execute_requires_configured_credentials(client):

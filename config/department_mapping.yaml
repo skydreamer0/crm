@@ -4,7 +4,7 @@ departments:
   URO:
     name_zh: 泌尿科
     aliases: [泌尿科, 泌尿外科, Urology, uro]
-    products: [uri, eli, oxb]
+    products: [uri, eli_22_5, oxb]
 
   OBS:
     name_zh: 婦產科
@@ -14,7 +14,7 @@ departments:
   PED:
     name_zh: 小兒科
     aliases: [小兒科, 兒科, Pediatrics, ped]
-    products: [eli, oxb]
+    products: [eli_45, oxb]
 
   FM:
     name_zh: 家醫科

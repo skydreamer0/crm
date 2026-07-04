@@ -12,7 +12,7 @@
 
 ## Chosen Direction
 
-Use the **Variant B matrix** from `src/templates/settings_product_rules_prototype.html`.
+Use the **Variant B matrix** now mounted at `/settings/products` from `src/templates/product_rules.html`.
 
 The production settings page should show hospitals as rows and departments as columns. Each cell shows:
 
@@ -314,7 +314,7 @@ Expected: FAIL because the settings page only has CRM credentials today.
 
 **Step 3: Implement matrix UI from Variant B**
 
-Use `src/templates/settings_product_rules_prototype.html` as reference, but rewrite production code inside `settings.html`:
+Use `src/templates/product_rules.html` as the production matrix surface:
 
 - Keep the existing CRM credentials section.
 - Add a `hospitalProductMatrix` section.
@@ -383,7 +383,7 @@ git commit -m "feat(automation): use locked SKU product IDs"
 
 **Files:**
 - Modify as needed from prior tasks.
-- Optional delete after production UI lands: `src/templates/settings_product_rules_prototype.html`
+- Keep `src/templates/product_rules.html` as the matrix settings surface.
 
 **Step 1: Run focused tests**
 

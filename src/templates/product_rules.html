@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>醫院產品矩陣 — CRM 操作介面</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f1117;
+            --bg-card: #1a1d28;
+            --bg-input: #151821;
+            --border: #2a2e3e;
+            --text-primary: #e8eaf0;
+            --text-secondary: #8b8fa7;
+            --text-muted: #5c6078;
+            --accent: #6c63ff;
+            --accent-soft: rgba(108, 99, 255, 0.15);
+            --accent-glow: rgba(108, 99, 255, 0.35);
+            --success: #34d399;
+            --success-soft: rgba(52, 211, 153, 0.12);
+            --warning: #fbbf24;
+            --warning-soft: rgba(251, 191, 36, 0.12);
+            --danger: #f87171;
+            --danger-soft: rgba(248, 113, 113, 0.12);
+            --teal: #2dd4bf;
+            --teal-soft: rgba(45, 212, 191, 0.12);
+            --gradient-1: linear-gradient(135deg, #6c63ff 0%, #a78bfa 100%);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .app {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 24px 48px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .header__logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header__icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-1);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .header__title {
+            font-size: 22px;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header__actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .back-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 10px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+            border-color: var(--text-muted);
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 13px;
+            max-width: 680px;
+        }
+
+        .meta-strip {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 14px 0 22px;
+        }
+
+        h2 {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .pill,
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            min-height: 26px;
+            padding: 4px 10px;
+            white-space: nowrap;
+        }
+
+        .pill {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .pill-hot {
+            background: var(--warning-soft);
+            border-color: rgba(251, 191, 36, 0.35);
+            color: var(--warning);
+        }
+
+        .pill-good {
+            background: var(--success-soft);
+            border-color: rgba(52, 211, 153, 0.35);
+            color: var(--success);
+        }
+
+        .pill-dirty {
+            background: var(--danger-soft);
+            border-color: rgba(248, 113, 113, 0.35);
+            color: var(--danger);
+        }
+
+        .surface {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+            min-height: 52px;
+            padding: 12px 16px;
+        }
+
+        .panel-body {
+            padding: 16px;
+        }
+
+        .tiny {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 400;
+        }
+
+        .search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            min-height: 40px;
+            padding: 0 12px;
+            transition: var(--transition);
+        }
+
+        .search:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .search input {
+            background: transparent;
+            border: 0;
+            color: var(--text-primary);
+            min-width: 0;
+            outline: 0;
+            width: 100%;
+        }
+
+        .search input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .matrix-layout {
+            display: grid;
+            gap: 16px;
+        }
+
+        .matrix-toolbar {
+            display: grid;
+            align-items: center;
+            gap: 12px;
+            grid-template-columns: minmax(220px, 1fr) auto auto;
+        }
+
+        .hospital-form {
+            display: none;
+        }
+
+        .hospital-form.open {
+            display: block;
+        }
+
+        .hospital-form .panel-body {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto auto;
+            align-items: end;
+        }
+
+        .form-field {
+            display: grid;
+            gap: 6px;
+        }
+
+        .form-field label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .form-field input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            min-height: 40px;
+            outline: none;
+            padding: 8px 12px;
+            transition: var(--transition);
+        }
+
+        .form-field input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .matrix-wrap {
+            overflow-x: auto;
+        }
+
+        .matrix-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+
+        .matrix-table th,
+        .matrix-table td {
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .matrix-table th:last-child,
+        .matrix-table td:last-child {
+            border-right: 0;
+        }
+
+        .matrix-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .matrix-table th:first-child,
+        .matrix-table td:first-child {
+            border-left: 0;
+            min-width: 200px;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+        }
+
+        .matrix-table th:first-child {
+            background: var(--bg-card);
+            z-index: 7;
+        }
+
+        .matrix-table td:first-child {
+            background: var(--bg-input);
+        }
+
+        .matrix-table th {
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            white-space: nowrap;
+        }
+
+        .hospital-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .row-actions {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 12px;
+            height: 24px;
+            line-height: 1;
+            width: 24px;
+            transition: var(--transition);
+        }
+
+        .icon-btn:hover {
+            border-color: var(--text-muted);
+            color: var(--text-primary);
+        }
+
+        .icon-btn.danger:hover {
+            border-color: rgba(248, 113, 113, 0.5);
+            color: var(--danger);
+        }
+
+        .matrix-cell {
+            background: transparent;
+            border: 0;
+            color: inherit;
+            display: grid;
+            gap: 8px;
+            min-height: 104px;
+            min-width: 180px;
+            padding: 0;
+            text-align: left;
+            width: 100%;
+        }
+
+        .matrix-cell.active {
+            outline: 2px solid var(--accent);
+            outline-offset: 6px;
+            border-radius: 4px;
+        }
+
+        .matrix-cell.fallback .chip {
+            opacity: 0.55;
+        }
+
+        .cell-products {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .chip {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .chip-uri {
+            background: var(--teal-soft);
+            border-color: rgba(45, 212, 191, 0.35);
+            color: var(--teal);
+        }
+
+        .chip-eli {
+            background: var(--danger-soft);
+            border-color: rgba(248, 113, 113, 0.35);
+            color: var(--danger);
+        }
+
+        .chip-oxb {
+            background: var(--warning-soft);
+            border-color: rgba(251, 191, 36, 0.35);
+            color: var(--warning);
+        }
+
+        .chip-empty {
+            background: var(--bg-input);
+            color: var(--text-muted);
+        }
+
+        .sku-code {
+            color: var(--text-muted);
+            font-family: 'Cascadia Mono', Consolas, monospace;
+            font-size: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .chip .sku-code {
+            color: inherit;
+            opacity: 0.75;
+        }
+
+        .empty-state {
+            display: grid;
+            gap: 14px;
+            justify-items: center;
+            padding: 48px 20px;
+            text-align: center;
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+            max-width: 460px;
+        }
+
+        .empty-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .drawer {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+        }
+
+        .editor-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .editor-row {
+            display: grid;
+            align-items: center;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            gap: 10px;
+            grid-template-columns: auto minmax(0, 1fr);
+            padding: 10px 12px;
+            transition: var(--transition);
+        }
+
+        .editor-row:hover {
+            border-color: var(--text-muted);
+        }
+
+        .editor-row input {
+            accent-color: var(--accent);
+            height: 18px;
+            width: 18px;
+        }
+
+        .note-field {
+            display: grid;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .note-field span {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .note-field input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            min-height: 40px;
+            outline: none;
+            padding: 8px 12px;
+            transition: var(--transition);
+        }
+
+        .note-field input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .summary-box {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-family: 'Cascadia Mono', Consolas, monospace;
+            font-size: 12px;
+            padding: 12px;
+            white-space: pre-wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            outline: none;
+            white-space: nowrap;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn--primary {
+            background: var(--gradient-1);
+            color: #fff;
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .btn--primary:hover {
+            box-shadow: 0 6px 24px var(--accent-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn--secondary {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn--secondary:hover {
+            color: var(--text-primary);
+            border-color: var(--text-muted);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            padding: 14px 22px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            font-size: 13px;
+            color: var(--text-primary);
+            z-index: 999;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.warning {
+            border-color: rgba(251, 191, 36, 0.4);
+            background: var(--warning-soft);
+        }
+
+        @media (max-width: 900px) {
+
+            .drawer,
+            .matrix-toolbar,
+            .hospital-form .panel-body {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .app {
+                padding: 20px 14px 40px;
+            }
+
+            .header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .header__actions,
+            .meta-strip {
+                justify-content: flex-start;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app">
+        <header class="header">
+            <div class="header__logo">
+                <div class="header__icon">💊</div>
+                <h1 class="header__title">醫院產品矩陣</h1>
+            </div>
+            <div class="header__actions">
+                <button class="btn btn--secondary" type="button" data-action="reset">↻ 還原</button>
+                <button class="btn btn--primary" type="button" data-action="save">✓ 儲存</button>
+                <a class="back-link" href="/settings">← 返回設定</a>
+            </div>
+        </header>
+
+        <p class="page-subtitle">
+            依醫院與科別鎖定實際要建立的產品 SKU（Eligard 各劑量直接對應 CRM 產品編號）。
+            醫院清單是你的個人設定，存在本機設定檔；沒設定的科別會使用公司預設產品。
+        </p>
+
+        <div class="meta-strip" id="metaStrip"></div>
+
+        <section class="matrix-layout">
+            <div class="surface hospital-form" id="hospitalForm">
+                <div class="panel-head">
+                    <h2 id="hospitalFormTitle">新增醫院</h2>
+                </div>
+                <div class="panel-body">
+                    <div class="form-field">
+                        <label for="hospitalNameInput">醫院名稱</label>
+                        <input id="hospitalNameInput" placeholder="例：新光醫院">
+                    </div>
+                    <div class="form-field">
+                        <label for="hospitalAliasInput">別名（名單上會出現的寫法，逗號分隔）</label>
+                        <input id="hospitalAliasInput" placeholder="例：新光, 新光吳火獅">
+                    </div>
+                    <button class="btn btn--primary" type="button" data-action="confirmHospital">確定</button>
+                    <button class="btn btn--secondary" type="button" data-action="cancelHospital">取消</button>
+                </div>
+            </div>
+
+            <div class="surface">
+                <div class="panel-body matrix-toolbar">
+                    <label class="search" aria-label="搜尋矩陣">
+                        <span>⌕</span>
+                        <input id="matrixSearch" placeholder="搜尋醫院、別名、SKU">
+                    </label>
+                    <button class="btn btn--secondary" type="button" data-action="addHospital">＋ 新增醫院</button>
+                    <span class="pill">空白科別走公司預設</span>
+                </div>
+            </div>
+
+            <div class="surface matrix-wrap" id="matrixSurface">
+                <table class="matrix-table" id="matrixTable">
+                    <thead id="matrixHead"></thead>
+                    <tbody id="matrixBody"></tbody>
+                </table>
+                <div class="empty-state" id="emptyState" hidden>
+                    <h2>還沒有任何醫院</h2>
+                    <p>
+                        新增你負責的醫院後，就能為每間醫院、每個科別鎖定要建立的產品 SKU。
+                        沒設定的部分會自動使用公司預設，不影響執行。
+                    </p>
+                    <div class="empty-actions">
+                        <button class="btn btn--primary" type="button" data-action="addHospital">＋ 新增醫院</button>
+                        <button class="btn btn--secondary" type="button" data-action="loadSample">匯入範例資料</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="drawer" id="drawer">
+                <section class="surface">
+                    <div class="panel-head">
+                        <h2 id="editorTitle">規則</h2>
+                        <button class="btn btn--secondary" type="button" data-action="toggleMode">切換模式</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="editor-grid" id="skuEditor"></div>
+                        <label class="note-field">
+                            <span>備註</span>
+                            <input id="noteInput" placeholder="例：院內主跑六個月劑量">
+                        </label>
+                    </div>
+                </section>
+
+                <aside class="surface">
+                    <div class="panel-head">
+                        <h2>目前結果</h2>
+                        <span class="pill" id="modePill">Fallback</span>
+                    </div>
+                    <div class="panel-body">
+                        <pre class="summary-box" id="summaryBox"></pre>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ── 公司資料（/api/product-config）與個人資料（/api/settings）───────────
+        let config = { departments: [], products: [] };
+        let hospitals = {};           // hospital_product_rules（個人設定）
+        let selectedHospitalId = null;
+        let selectedDept = null;
+        let dirty = false;
+        let editingHospitalId = null; // null = 新增模式
+        let searchTerm = "";
+
+        const SAMPLE_RULES = {
+            skh: {
+                name: "新光醫院",
+                aliases: ["新光", "新光醫院"],
+                departments: {
+                    URO: { mode: "locked", products: ["uri", "eli_45"], note: "院內主跑六個月劑量" },
+                    PED: { mode: "locked", products: ["eli_45", "oxb"], note: "小兒科只開六個月劑量" }
+                }
+            },
+            tzuchi: {
+                name: "慈濟台北",
+                aliases: ["慈濟", "台北慈濟"],
+                departments: {
+                    URO: { mode: "locked", products: ["uri", "eli_22_5"], note: "泌尿科固定三個月劑量" }
+                }
+            },
+            cth: {
+                name: "耕莘永和",
+                aliases: ["耕莘", "耕莘永和"],
+                departments: {
+                    OBS: { mode: "locked", products: ["ysl", "esv"], note: "婦產科不跑 OXB" }
+                }
+            },
+            ak: {
+                name: "耕莘安康",
+                aliases: ["安康", "耕莘安康"],
+                departments: {
+                    URO: { mode: "locked", products: ["uri"], note: "只跑 Urief" }
+                }
+            }
+        };
+
+        // ── helpers ──────────────────────────────────────────────────────────
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function hospitalIds() {
+            return Object.keys(hospitals);
+        }
+
+        function selectedHospital() {
+            return hospitals[selectedHospitalId] || null;
+        }
+
+        function selectedRule() {
+            const hospital = selectedHospital();
+            if (!hospital || !selectedDept) return null;
+            hospital.departments ||= {};
+            hospital.departments[selectedDept] ||= { mode: "fallback", products: [], note: "" };
+            return hospital.departments[selectedDept];
+        }
+
+        function deptDefaults(deptCode) {
+            const dept = config.departments.find(d => d.code === deptCode);
+            return dept ? dept.default_products : [];
+        }
+
+        function deptName(code) {
+            return config.departments.find(d => d.code === code)?.name_zh || code;
+        }
+
+        function productByCode(code) {
+            return config.products.find(p => p.code === code);
+        }
+
+        function effectiveProducts(hospital, deptCode) {
+            const rule = hospital.departments?.[deptCode];
+            if (rule?.mode === "locked") return rule.products;
+            return deptDefaults(deptCode);
+        }
+
+        function chipClass(code) {
+            const family = productByCode(code)?.family || code;
+            if (family === "eli") return "chip-eli";
+            if (code === "uri") return "chip-uri";
+            if (code === "oxb") return "chip-oxb";
+            return "";
+        }
+
+        function productChip(code) {
+            const product = productByCode(code);
+            if (!product) return `<span class="chip chip-empty">${escapeHtml(code)}</span>`;
+            return `<span class="chip ${chipClass(code)}">${escapeHtml(product.brand_name)} <span class="sku-code">${escapeHtml(product.crm_product_id)}</span></span>`;
+        }
+
+        function lockPill(mode) {
+            return mode === "locked"
+                ? `<span class="pill pill-hot">Locked</span>`
+                : `<span class="pill">Fallback</span>`;
+        }
+
+        function markDirty() {
+            dirty = true;
+            renderMeta();
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.className = `toast show ${type || ""}`;
+            setTimeout(() => toast.classList.remove("show"), 2500);
+        }
+
+        // ── rendering ────────────────────────────────────────────────────────
+        function lockedRuleCount() {
+            let count = 0;
+            for (const hospital of Object.values(hospitals)) {
+                for (const rule of Object.values(hospital.departments || {})) {
+                    if (rule.mode === "locked") count += 1;
+                }
+            }
+            return count;
+        }
+
+        function renderMeta() {
+            const ids = hospitalIds();
+            const pills = [
+                `<span class="pill pill-good">${ids.length} 家醫院</span>`,
+                `<span class="pill pill-hot">${lockedRuleCount()} 個鎖定規則</span>`,
+                `<span class="pill">本機設定</span>`,
+            ];
+            if (dirty) pills.push(`<span class="pill pill-dirty">● 尚未儲存</span>`);
+            document.getElementById("metaStrip").innerHTML = pills.join("");
+        }
+
+        function hospitalMatchesSearch(id) {
+            if (!searchTerm) return true;
+            const q = searchTerm.toLowerCase();
+            const hospital = hospitals[id];
+            const texts = [hospital.name, ...(hospital.aliases || [])];
+            for (const rule of Object.values(hospital.departments || {})) {
+                for (const code of rule.products || []) {
+                    const p = productByCode(code);
+                    texts.push(code, p?.brand_name || "", p?.crm_product_id || "");
+                }
+            }
+            return texts.join(" ").toLowerCase().includes(q);
+        }
+
+        function renderMatrix() {
+            const ids = hospitalIds();
+            const empty = ids.length === 0;
+            document.getElementById("emptyState").hidden = !empty;
+            document.getElementById("matrixTable").style.display = empty ? "none" : "";
+            document.getElementById("drawer").style.display = empty ? "none" : "";
+            if (empty) return;
+
+            document.getElementById("matrixHead").innerHTML = `
+                <tr>
+                    <th>醫院</th>
+                    ${config.departments.map(dept => `<th>${escapeHtml(dept.name_zh)}<br><span class="tiny">${escapeHtml(dept.code)}</span></th>`).join("")}
+                </tr>
+            `;
+
+            document.getElementById("matrixBody").innerHTML = ids
+                .filter(hospitalMatchesSearch)
+                .map(id => {
+                    const hospital = hospitals[id];
+                    return `
+                <tr>
+                    <td>
+                        <div class="hospital-head">
+                            <div>
+                                <strong>${escapeHtml(hospital.name)}</strong>
+                                <div class="tiny">${escapeHtml((hospital.aliases || []).join(" / ")) || "（沒有別名）"}</div>
+                            </div>
+                            <span class="row-actions">
+                                <button class="icon-btn" type="button" title="編輯醫院" data-action="editHospital" data-hospital="${id}">✎</button>
+                                <button class="icon-btn danger" type="button" title="刪除醫院" data-action="deleteHospital" data-hospital="${id}">✕</button>
+                            </span>
+                        </div>
+                    </td>
+                    ${config.departments.map(dept => {
+                        const rule = hospital.departments?.[dept.code];
+                        const locked = rule?.mode === "locked";
+                        const effective = effectiveProducts(hospital, dept.code);
+                        const active = selectedHospitalId === id && selectedDept === dept.code;
+                        return `
+                            <td>
+                                <button class="matrix-cell ${active ? "active" : ""} ${locked ? "" : "fallback"}" type="button" data-action="focusRule" data-hospital="${id}" data-dept="${dept.code}">
+                                    <span>${lockPill(locked ? "locked" : "fallback")}</span>
+                                    <span class="cell-products">
+                                        ${effective.length ? effective.map(productChip).join("") : `<span class="chip chip-empty">沒有產品</span>`}
+                                    </span>
+                                    <span class="tiny">${rule?.note ? escapeHtml(rule.note) : "科別預設"}</span>
+                                </button>
+                            </td>
+                        `;
+                    }).join("")}
+                </tr>
+            `;
+                }).join("");
+        }
+
+        function renderEditor() {
+            const hospital = selectedHospital();
+            if (!hospital || !selectedDept) return;
+            const rule = selectedRule();
+            const effective = effectiveProducts(hospital, selectedDept);
+            const locked = rule.mode === "locked";
+
+            document.getElementById("editorTitle").textContent = `${hospital.name} / ${deptName(selectedDept)}`;
+            document.getElementById("modePill").textContent = locked ? "Locked" : "Fallback";
+            document.getElementById("modePill").className = `pill ${locked ? "pill-hot" : ""}`;
+            document.getElementById("noteInput").value = rule.note || "";
+            document.getElementById("skuEditor").innerHTML = config.products.map(product => `
+                <label class="editor-row">
+                    <input type="checkbox" data-action="toggleSku" data-code="${product.code}" ${effective.includes(product.code) ? "checked" : ""}>
+                    <span>
+                        <strong>${escapeHtml(product.display_name)}</strong><br>
+                        <span class="sku-code">${escapeHtml(product.code)} / CRM ${escapeHtml(product.crm_product_id)}</span>
+                    </span>
+                </label>
+            `).join("");
+
+            document.getElementById("summaryBox").textContent = JSON.stringify({
+                hospital: hospital.name,
+                department: selectedDept,
+                mode: rule.mode,
+                products: effective,
+                crm_product_ids: effective.map(code => productByCode(code)?.crm_product_id || code)
+            }, null, 2);
+        }
+
+        function render() {
+            renderMeta();
+            renderMatrix();
+            renderEditor();
+        }
+
+        // ── persistence ──────────────────────────────────────────────────────
+        function prunedRules() {
+            // 移除完全空白的 fallback 規則，保持設定檔乾淨
+            const out = {};
+            for (const [id, hospital] of Object.entries(hospitals)) {
+                const departments = {};
+                for (const [code, rule] of Object.entries(hospital.departments || {})) {
+                    const emptyFallback = rule.mode !== "locked" && !(rule.products || []).length && !rule.note;
+                    if (!emptyFallback) departments[code] = rule;
+                }
+                out[id] = { name: hospital.name, aliases: hospital.aliases || [], departments };
+            }
+            return out;
+        }
+
+        async function loadAll() {
+            try {
+                const [configRes, settingsRes] = await Promise.all([
+                    fetch("/api/product-config"),
+                    fetch("/api/settings"),
+                ]);
+                config = await configRes.json();
+                const settings = await settingsRes.json();
+                hospitals = settings.hospital_product_rules || {};
+                dirty = false;
+                ensureSelection();
+                render();
+            } catch (err) {
+                showToast(`載入失敗: ${err.message}`, "warning");
+            }
+        }
+
+        async function saveAll() {
+            try {
+                const res = await fetch("/api/settings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ hospital_product_rules: prunedRules() }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "儲存失敗");
+                hospitals = data.hospital_product_rules || {};
+                dirty = false;
+                ensureSelection();
+                render();
+                showToast("✅ 醫院產品規則已儲存");
+            } catch (err) {
+                showToast(`儲存失敗: ${err.message}`, "warning");
+            }
+        }
+
+        function ensureSelection() {
+            const ids = hospitalIds();
+            if (!ids.includes(selectedHospitalId)) selectedHospitalId = ids[0] || null;
+            const deptCodes = config.departments.map(d => d.code);
+            if (!deptCodes.includes(selectedDept)) selectedDept = deptCodes[0] || null;
+        }
+
+        // ── hospital form ────────────────────────────────────────────────────
+        function openHospitalForm(hospitalId) {
+            editingHospitalId = hospitalId || null;
+            const form = document.getElementById("hospitalForm");
+            const hospital = hospitalId ? hospitals[hospitalId] : null;
+            document.getElementById("hospitalFormTitle").textContent = hospital ? `編輯醫院：${hospital.name}` : "新增醫院";
+            document.getElementById("hospitalNameInput").value = hospital?.name || "";
+            document.getElementById("hospitalAliasInput").value = (hospital?.aliases || []).join(", ");
+            form.classList.add("open");
+            document.getElementById("hospitalNameInput").focus();
+        }
+
+        function closeHospitalForm() {
+            editingHospitalId = null;
+            document.getElementById("hospitalForm").classList.remove("open");
+        }
+
+        function confirmHospitalForm() {
+            const name = document.getElementById("hospitalNameInput").value.trim();
+            if (!name) {
+                showToast("請輸入醫院名稱", "warning");
+                return;
+            }
+            const aliases = document.getElementById("hospitalAliasInput").value
+                .split(/[,，、/\s]+/)
+                .map(a => a.trim())
+                .filter(Boolean);
+            if (!aliases.includes(name)) aliases.push(name);
+
+            if (editingHospitalId && hospitals[editingHospitalId]) {
+                hospitals[editingHospitalId].name = name;
+                hospitals[editingHospitalId].aliases = aliases;
+            } else {
+                const id = `h_${Date.now().toString(36)}${Math.floor(Math.random() * 100)}`;
+                hospitals[id] = { name, aliases, departments: {} };
+                selectedHospitalId = id;
+            }
+            closeHospitalForm();
+            markDirty();
+            ensureSelection();
+            render();
+        }
+
+        // ── events ───────────────────────────────────────────────────────────
+        document.addEventListener("click", event => {
+            const target = event.target.closest("[data-action]");
+            if (!target) return;
+            const action = target.dataset.action;
+
+            if (action === "focusRule") {
+                selectedHospitalId = target.dataset.hospital;
+                selectedDept = target.dataset.dept;
+                render();
+            }
+            if (action === "toggleMode") {
+                const rule = selectedRule();
+                if (!rule) return;
+                rule.mode = rule.mode === "locked" ? "fallback" : "locked";
+                if (rule.mode === "locked" && !rule.products.length) {
+                    rule.products = [...deptDefaults(selectedDept)];
+                }
+                markDirty();
+                render();
+            }
+            if (action === "addHospital") openHospitalForm(null);
+            if (action === "editHospital") openHospitalForm(target.dataset.hospital);
+            if (action === "deleteHospital") {
+                const id = target.dataset.hospital;
+                const hospital = hospitals[id];
+                if (hospital && confirm(`確定刪除「${hospital.name}」與其所有規則？`)) {
+                    delete hospitals[id];
+                    markDirty();
+                    ensureSelection();
+                    render();
+                }
+            }
+            if (action === "confirmHospital") confirmHospitalForm();
+            if (action === "cancelHospital") closeHospitalForm();
+            if (action === "loadSample") {
+                hospitals = structuredClone(SAMPLE_RULES);
+                markDirty();
+                ensureSelection();
+                render();
+                showToast("已載入範例，記得按「儲存」");
+            }
+            if (action === "reset") {
+                loadAll().then(() => showToast("已還原為已儲存的設定"));
+            }
+            if (action === "save") saveAll();
+        });
+
+        document.addEventListener("change", event => {
+            const skuToggle = event.target.closest("[data-action='toggleSku']");
+            if (skuToggle) {
+                const rule = selectedRule();
+                if (!rule) return;
+                const code = skuToggle.dataset.code;
+                if (rule.mode !== "locked") {
+                    // 從 fallback 進入 locked：先固定目前生效的預設清單再套用勾選
+                    rule.mode = "locked";
+                    rule.products = [...deptDefaults(selectedDept)];
+                }
+                if (skuToggle.checked && !rule.products.includes(code)) {
+                    rule.products = [...rule.products, code];
+                }
+                if (!skuToggle.checked) {
+                    rule.products = rule.products.filter(item => item !== code);
+                }
+                markDirty();
+                render();
+                return;
+            }
+            if (event.target.id === "noteInput") {
+                const rule = selectedRule();
+                if (!rule) return;
+                rule.note = event.target.value.trim();
+                markDirty();
+                render();
+            }
+        });
+
+        document.getElementById("matrixSearch").addEventListener("input", event => {
+            searchTerm = event.target.value.trim();
+            renderMatrix();
+        });
+
+        window.addEventListener("beforeunload", event => {
+            if (dirty) event.preventDefault();
+        });
+
+        loadAll();
+    </script>
+</body>
+
+</html>

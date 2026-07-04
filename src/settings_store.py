@@ -50,18 +50,43 @@ def load_saved_settings() -> dict[str, Any]:
         "crm_username": _as_text(data.get("crm_username")),
         "crm_password": _decode_secret(data.get("crm_password")),
         "headless": _as_bool(data.get("headless"), default=False),
+        "hospital_product_rules": _sanitize_hospital_product_rules(
+            data.get("hospital_product_rules")
+        ),
     }
 
 
 def save_settings(payload: dict[str, Any]) -> dict[str, Any]:
-    """Persist settings and return the public, secret-redacted status."""
+    """
+    Persist settings and return the public, secret-redacted status.
+
+    部分更新：payload 沒帶的欄位保留既有值，
+    讓產品矩陣頁只送 hospital_product_rules 也不會洗掉 CRM 帳密。
+    """
     existing_raw = _load_raw_settings()
 
+    def _field(name: str) -> str:
+        if name in payload:
+            return _as_text(payload.get(name))
+        return _as_text(existing_raw.get(name))
+
     raw = {
-        "crm_base_url": _as_text(payload.get("crm_base_url")),
-        "crm_username": _as_text(payload.get("crm_username")),
-        "headless": _as_bool(payload.get("headless"), default=False),
+        "crm_base_url": _field("crm_base_url"),
+        "crm_username": _field("crm_username"),
+        "headless": _as_bool(
+            payload.get("headless") if "headless" in payload else existing_raw.get("headless"),
+            default=False,
+        ),
     }
+
+    if "hospital_product_rules" in payload:
+        raw["hospital_product_rules"] = _sanitize_hospital_product_rules(
+            payload.get("hospital_product_rules")
+        )
+    else:
+        raw["hospital_product_rules"] = _sanitize_hospital_product_rules(
+            existing_raw.get("hospital_product_rules")
+        )
 
     for field in SECRET_FIELDS:
         value = _as_text(payload.get(field))
@@ -91,6 +116,7 @@ def get_effective_settings() -> dict[str, Any]:
         "crm_username": saved["crm_username"] or os.getenv("CRM_USERNAME", ""),
         "crm_password": saved["crm_password"] or os.getenv("CRM_PASSWORD", ""),
         "headless": saved["headless"] if "headless" in saved else _env_headless(),
+        "hospital_product_rules": saved["hospital_product_rules"],
     }
 
 
@@ -105,6 +131,7 @@ def get_public_settings() -> dict[str, Any]:
         "crm_username": saved["crm_username"] or _as_text(os.getenv("CRM_USERNAME")),
         "crm_password": "",
         "headless": effective["headless"],
+        "hospital_product_rules": saved["hospital_product_rules"],
         "has_password": bool(effective["crm_password"]),
         "is_configured": not missing,
         "missing_fields": missing,
@@ -124,7 +151,61 @@ def _empty_settings() -> dict[str, Any]:
         "crm_username": "",
         "crm_password": "",
         "headless": False,
+        "hospital_product_rules": {},
     }
+
+
+def _sanitize_hospital_product_rules(value: Any) -> dict[str, Any]:
+    """
+    Sanitize hospital product rules to a safe shape.
+
+    形狀: {hospital_id: {name, aliases: [str], departments: {CODE: {mode, products: [str], note}}}}
+    未知 mode 一律降為 fallback，避免壞資料讓自動化崩潰。
+    """
+    if not isinstance(value, dict):
+        return {}
+
+    clean: dict[str, Any] = {}
+    for hospital_id, hospital in value.items():
+        hospital_id = _as_text(hospital_id)
+        if not hospital_id or not isinstance(hospital, dict):
+            continue
+
+        aliases_raw = hospital.get("aliases")
+        aliases = (
+            [_as_text(a) for a in aliases_raw if _as_text(a)]
+            if isinstance(aliases_raw, list)
+            else []
+        )
+
+        departments: dict[str, Any] = {}
+        departments_raw = hospital.get("departments")
+        if isinstance(departments_raw, dict):
+            for code, rule in departments_raw.items():
+                code = _as_text(code).upper()
+                if not code or not isinstance(rule, dict):
+                    continue
+                mode = _as_text(rule.get("mode")).lower()
+                if mode != "locked":
+                    mode = "fallback"
+                products_raw = rule.get("products")
+                products = (
+                    [_as_text(p) for p in products_raw if _as_text(p)]
+                    if isinstance(products_raw, list)
+                    else []
+                )
+                departments[code] = {
+                    "mode": mode,
+                    "products": products,
+                    "note": _as_text(rule.get("note")),
+                }
+
+        clean[hospital_id] = {
+            "name": _as_text(hospital.get("name")),
+            "aliases": aliases,
+            "departments": departments,
+        }
+    return clean
 
 
 def _load_raw_settings() -> dict[str, Any]:

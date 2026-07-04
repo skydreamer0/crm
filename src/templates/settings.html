@@ -112,6 +112,10 @@
             box-shadow: var(--shadow-sm);
         }
 
+        .settings-section + .settings-section {
+            margin-top: 18px;
+        }
+
         .settings-header {
             display: flex;
             align-items: center;
@@ -236,6 +240,12 @@
             color: var(--text-muted);
             font-family: monospace;
             word-break: break-all;
+        }
+
+        .section-copy {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.7;
         }
 
         .btn {
@@ -375,6 +385,19 @@
                 </button>
             </div>
             <div class="settings-path" id="settingsPath"></div>
+        </section>
+
+        <section class="settings-section">
+            <div class="settings-header">
+                <div class="section-label">
+                    <span class="section-label__dot"></span>
+                    產品規則
+                </div>
+                <a class="back-link" href="/settings/products">醫院產品矩陣 →</a>
+            </div>
+            <p class="section-copy">
+                設定每間醫院、每個科別要建立的 CRM 產品 SKU，包含 Eligard 不同月份劑量。
+            </p>
         </section>
     </div>
 

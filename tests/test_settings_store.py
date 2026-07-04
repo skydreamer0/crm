@@ -123,6 +123,116 @@ def test_legacy_settings_file_with_line_token_still_loads(monkeypatch, tmp_path)
     assert "line_notify_token" not in effective
 
 
+def test_save_settings_persists_hospital_product_rules():
+    from settings_store import get_effective_settings, save_settings
+
+    public = save_settings(
+        {
+            "crm_base_url": "https://crm.example.test",
+            "crm_username": "alice",
+            "crm_password": "secret",
+            "hospital_product_rules": {
+                "skh": {
+                    "name": "新光醫院",
+                    "aliases": ["新光"],
+                    "departments": {
+                        "URO": {"mode": "locked", "products": ["uri", "eli_45"], "note": ""}
+                    },
+                }
+            },
+        }
+    )
+
+    assert public["hospital_product_rules"]["skh"]["departments"]["URO"]["products"] == ["uri", "eli_45"]
+
+    effective = get_effective_settings()
+    assert effective["hospital_product_rules"]["skh"]["name"] == "新光醫院"
+
+
+def test_rules_only_update_preserves_credentials():
+    # 產品矩陣頁只送 hospital_product_rules，不能洗掉既有帳密
+    from settings_store import get_effective_settings, save_settings
+
+    save_settings(
+        {
+            "crm_base_url": "https://crm.example.test",
+            "crm_username": "alice",
+            "crm_password": "keep-me",
+            "headless": True,
+        }
+    )
+
+    public = save_settings(
+        {
+            "hospital_product_rules": {
+                "skh": {"name": "新光醫院", "aliases": [], "departments": {}}
+            }
+        }
+    )
+
+    effective = get_effective_settings()
+    assert public["is_configured"] is True
+    assert effective["crm_username"] == "alice"
+    assert effective["crm_password"] == "keep-me"
+    assert effective["headless"] is True
+    assert "skh" in effective["hospital_product_rules"]
+
+
+def test_credentials_update_preserves_hospital_product_rules():
+    from settings_store import get_effective_settings, save_settings
+
+    save_settings(
+        {
+            "hospital_product_rules": {
+                "skh": {"name": "新光醫院", "aliases": [], "departments": {}}
+            }
+        }
+    )
+    save_settings(
+        {
+            "crm_base_url": "https://crm.example.test",
+            "crm_username": "alice",
+            "crm_password": "secret",
+        }
+    )
+
+    effective = get_effective_settings()
+    assert effective["hospital_product_rules"]["skh"]["name"] == "新光醫院"
+
+
+def test_hospital_product_rules_are_sanitized():
+    from settings_store import get_effective_settings, save_settings
+
+    save_settings(
+        {
+            "crm_base_url": "https://crm.example.test",
+            "crm_username": "alice",
+            "crm_password": "secret",
+            "hospital_product_rules": {
+                "bad-hospital": "not-a-dict",
+                "skh": {
+                    "name": "  新光醫院  ",
+                    "aliases": ["新光", "", 123],
+                    "departments": {
+                        "uro": {"mode": "LOCKED", "products": ["uri", "", None], "note": None},
+                        "obs": {"mode": "whatever", "products": "not-a-list"},
+                        "": {"mode": "locked", "products": ["uri"]},
+                    },
+                },
+            },
+        }
+    )
+
+    rules = get_effective_settings()["hospital_product_rules"]
+    assert "bad-hospital" not in rules
+    skh = rules["skh"]
+    assert skh["name"] == "新光醫院"
+    assert skh["aliases"] == ["新光", "123"]
+    assert skh["departments"]["URO"] == {"mode": "locked", "products": ["uri"], "note": ""}
+    assert skh["departments"]["OBS"]["mode"] == "fallback"
+    assert skh["departments"]["OBS"]["products"] == []
+
+
 def test_settings_path_uses_appdata_style_directory(monkeypatch, tmp_path):
     monkeypatch.delenv("CRM_AUTOMATION_CONFIG_DIR", raising=False)
     monkeypatch.setenv("APPDATA", str(tmp_path))

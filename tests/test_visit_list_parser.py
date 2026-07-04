@@ -9,8 +9,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from visit_list_parser import (
+    apply_hospital_product_rules,
+    collect_hospital_aliases,
     parse_single_entry,
     parse_visit_list,
+    resolve_crm_product_id,
     select_products,
     VisitEntry,
 )
@@ -96,17 +99,18 @@ class TestParseVisitList:
 
 class TestProductMatching:
 
-    def test_uro_products(self):
+    def test_uro_uses_explicit_eli_sku_default(self):
         e = parse_single_entry("慈濟/URO/吳書雨/B")
-        assert e.matched_products == ["uri", "eli", "oxb"]
+        assert e.matched_products == ["uri", "eli_22_5", "oxb"]
+        assert "eli" not in e.matched_products
 
     def test_obs_products(self):
         e = parse_single_entry("慈濟/OBS/祝春紅/B")
         assert e.matched_products == ["ysl", "esv", "lmn", "oxb"]
 
-    def test_ped_products(self):
+    def test_ped_uses_explicit_eli_45_default(self):
         e = parse_single_entry("新光/PED/林小明/C")
-        assert e.matched_products == ["eli", "oxb"]
+        assert e.matched_products == ["eli_45", "oxb"]
 
     def test_fm_products(self):
         e = parse_single_entry("馬偕/FM/陳大華/A")
@@ -116,32 +120,144 @@ class TestProductMatching:
         e = parse_single_entry("慈濟/URO/吳書雨/B")
         selected = select_products(e, count=2)
         assert len(selected) == 2
-        assert selected == ["uri", "eli"]
+        assert selected == ["uri", "eli_22_5"]
 
 class TestEligardRestriction:
 
     def test_eli_allowed_in_uro(self):
-        e = VisitEntry(customer_name="Test", department_code="URO", matched_products=["uri", "eli", "oxb"])
+        e = VisitEntry(customer_name="Test", department_code="URO", matched_products=["uri", "eli_22_5", "oxb"])
         selected = select_products(e, count=3)
-        assert "eli" in selected
+        assert "eli_22_5" in selected
 
     def test_eli_allowed_in_ped(self):
-        e = VisitEntry(customer_name="Test", department_code="PED", matched_products=["eli", "oxb"])
+        e = VisitEntry(customer_name="Test", department_code="PED", matched_products=["eli_45", "oxb"])
         selected = select_products(e, count=2)
-        assert "eli" in selected
+        assert "eli_45" in selected
 
     def test_eli_blocked_in_obs(self):
-        # Even if 'eli' is manually added to matched_products for OBS, it should be filtered
-        e = VisitEntry(customer_name="Test", department_code="OBS", matched_products=["ysl", "eli", "oxb"])
+        # Even if an ELI SKU is manually added to matched_products for OBS, it should be filtered
+        e = VisitEntry(customer_name="Test", department_code="OBS", matched_products=["ysl", "eli_22_5", "oxb"])
         selected = select_products(e, count=3)
-        assert "eli" not in selected
+        assert "eli_22_5" not in selected
         assert selected == ["ysl", "oxb"]
 
     def test_eli_blocked_in_fm(self):
-        e = VisitEntry(customer_name="Test", department_code="FM", matched_products=["uri", "eli", "oxb"])
+        e = VisitEntry(customer_name="Test", department_code="FM", matched_products=["uri", "eli_45", "oxb"])
         selected = select_products(e, count=3)
-        assert "eli" not in selected
+        assert "eli_45" not in selected
         assert selected == ["uri", "oxb"]
+
+    def test_locked_rule_bypasses_eli_restriction(self):
+        # 鎖定規則是使用者明確指定，不套 ELI 科別限制
+        e = VisitEntry(
+            customer_name="Test",
+            department_code="OBS",
+            hospital_name="新光",
+            matched_products=["ysl", "esv"],
+        )
+        rules = {
+            "skh": {
+                "name": "新光醫院",
+                "aliases": ["新光"],
+                "departments": {
+                    "OBS": {"mode": "locked", "products": ["eli_45"], "note": ""}
+                },
+            }
+        }
+        assert select_products(e, count=2, hospital_product_rules=rules) == ["eli_45"]
+
+
+# ── Hospital extraction & locked rules ───────────────────────────────────────
+
+HOSPITAL_RULES = {
+    "skh": {
+        "name": "新光醫院",
+        "aliases": ["新光"],
+        "departments": {
+            "URO": {"mode": "locked", "products": ["uri", "eli_45"], "note": ""}
+        },
+    },
+    "ak": {
+        "name": "耕莘安康",
+        "aliases": ["安康", "耕莘安康"],
+        "departments": {
+            "URO": {"mode": "locked", "products": ["uri"], "note": "只跑 Urief"}
+        },
+    },
+    "cth": {
+        "name": "耕莘永和",
+        "aliases": ["耕莘"],
+        "departments": {
+            "URO": {"mode": "locked", "products": ["uri", "eli_22_5"], "note": ""}
+        },
+    },
+}
+
+
+class TestHospitalExtraction:
+
+    def test_standard_format_extracts_hospital(self):
+        e = parse_single_entry("慈濟/URO/吳書雨/B")
+        assert e.hospital_name == "慈濟"
+
+    def test_long_hospital_alias_wins(self):
+        e = parse_single_entry("耕莘安康/URO/彭崇信/B")
+        assert e.hospital_name == "耕莘安康"
+
+    def test_unknown_hospital_defaults_empty(self):
+        e = parse_single_entry("光田/URO/王小明/A")
+        assert e.hospital_name == ""
+
+    def test_extra_hospitals_prevent_name_misparse(self):
+        # 使用者自訂醫院（不在內建清單）不應被誤判成客戶姓名
+        e = parse_single_entry("光田/URO/王小明/A", extra_hospitals={"光田"})
+        assert e.hospital_name == "光田"
+        assert e.customer_name == "王小明"
+
+    def test_collect_hospital_aliases(self):
+        aliases = collect_hospital_aliases(HOSPITAL_RULES)
+        assert {"新光醫院", "新光", "安康", "耕莘安康", "耕莘永和", "耕莘"} <= aliases
+
+
+class TestLockedRules:
+
+    def test_locked_hospital_department_rule_wins(self):
+        e = parse_single_entry("新光/URO/蔡醫師/A")
+        assert select_products(e, count=2, hospital_product_rules=HOSPITAL_RULES) == ["uri", "eli_45"]
+
+    def test_fallback_used_when_no_rule(self):
+        e = parse_single_entry("馬偕/URO/王小明/A")
+        assert select_products(e, count=2, hospital_product_rules=HOSPITAL_RULES) == ["uri", "eli_22_5"]
+
+    def test_longest_alias_wins_over_prefix(self):
+        # 耕莘安康 應命中安康規則，而不是 耕莘(永和) 的規則
+        e = parse_single_entry("耕莘安康/URO/彭崇信/B")
+        assert select_products(e, count=2, hospital_product_rules=HOSPITAL_RULES) == ["uri"]
+
+    def test_apply_rules_marks_entries_locked(self):
+        entries = parse_visit_list("新光/URO/蔡醫師/A\n馬偕/URO/王小明/A")
+        apply_hospital_product_rules(entries, HOSPITAL_RULES)
+        assert entries[0].products_locked is True
+        assert entries[0].matched_products == ["uri", "eli_45"]
+        assert entries[1].products_locked is False
+        assert entries[1].matched_products == ["uri", "eli_22_5", "oxb"]
+
+
+class TestCrmProductIdResolution:
+
+    def test_resolve_crm_product_id_uses_sku_directly(self):
+        e = VisitEntry(customer_name="蔡醫師", department_code="URO", matched_products=["eli_45"])
+        assert resolve_crm_product_id("eli_45", e) == "T5EL2"
+
+    def test_each_eli_sku_has_fixed_id(self):
+        e = VisitEntry(customer_name="任何人", department_code="OTHER")
+        assert resolve_crm_product_id("eli_7_5", e) == "T5EL0"
+        assert resolve_crm_product_id("eli_22_5", e) == "T5EL1"
+        assert resolve_crm_product_id("uri", e) == "21363"
+
+    def test_unknown_product_resolves_empty(self):
+        e = VisitEntry(customer_name="任何人")
+        assert resolve_crm_product_id("nope", e) == ""
 
 
 # ── Edge cases ───────────────────────────────────────────────────────────────

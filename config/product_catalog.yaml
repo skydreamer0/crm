@@ -13,19 +13,41 @@ products:
       - 2019 SPLASH 研究顯示，針對使用他型藥物效果不佳者，轉換成 Urief 可達 100% 症狀改善。
       - 代謝物 KMD-3213G 半衰期長達 18 小時，日本專利活性物質可持續穩定提供 24 小時療效。
 
-  eli:
-    brand_name: Eligard
+  # Eligard 以 SKU 為最小單位，各劑量直接對應固定 CRM 產品編號
+  eli_7_5:
+    family: eli
+    brand_name: ELI 7.5
+    display_name: Eligard 7.5 一個月劑量
+    dose_label: 1個月 / 7.5mg
     generic_name: Leuprolide Acetate
-    crm_search_term: "Eligard"
-    # ELI 的選擇邏輯較特殊，需要動態判定
-    crm_product_id: "DYNAMIC"
-    crm_dynamic_rules:
-      - condition: "customer_name contains '新光'"
-        product_id: "T5EL0" # 7.5
-      - condition: "department_code == 'PED'"
-        product_id: "T5EL2" # 45
-      - condition: "default"
-        product_id: "T5EL1" # 22.5
+    crm_search_term: "T5EL0"
+    crm_product_id: "T5EL0"
+    descriptions:
+      - 採創新的 ATRIGEL 釋放技術，注射體積小且針頭短，大幅降低患者的疼痛不適。
+      - 具備 2 倍於傳統劑型的效力，能穩定抑制睪固酮 T < 20 ng/dL，效果媲美手術去勢。
+      - 臨床證據顯示能延緩進入 CRPC 達 10 年以上，提供長期穩定的攝護腺癌控制。
+
+  eli_22_5:
+    family: eli
+    brand_name: ELI 22.5
+    display_name: Eligard 22.5 三個月劑量
+    dose_label: 3個月 / 22.5mg
+    generic_name: Leuprolide Acetate
+    crm_search_term: "T5EL1"
+    crm_product_id: "T5EL1"
+    descriptions:
+      - 採創新的 ATRIGEL 釋放技術，注射體積小且針頭短，大幅降低患者的疼痛不適。
+      - 具備 2 倍於傳統劑型的效力，能穩定抑制睪固酮 T < 20 ng/dL，效果媲美手術去勢。
+      - 臨床證據顯示能延緩進入 CRPC 達 10 年以上，提供長期穩定的攝護腺癌控制。
+
+  eli_45:
+    family: eli
+    brand_name: ELI 45
+    display_name: Eligard 45 六個月劑量
+    dose_label: 6個月 / 45mg
+    generic_name: Leuprolide Acetate
+    crm_search_term: "T5EL2"
+    crm_product_id: "T5EL2"
     descriptions:
       - 採創新的 ATRIGEL 釋放技術，注射體積小且針頭短，大幅降低患者的疼痛不適。
       - 具備 2 倍於傳統劑型的效力，能穩定抑制睪固酮 T < 20 ng/dL，效果媲美手術去勢。

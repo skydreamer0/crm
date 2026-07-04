@@ -41,6 +41,10 @@ from visit_list_parser import (
     select_products,
     get_product_info,
     get_random_description,
+    apply_hospital_product_rules,
+    collect_hospital_aliases,
+    DEPARTMENT_CONFIG,
+    PRODUCT_CATALOG,
     VisitEntry,
 )
 from create_appointments import run_automation
@@ -131,10 +135,46 @@ def settings_page():
     return render_template("settings.html")
 
 
+@app.route("/settings/products")
+def product_rules_page():
+    """Serve the hospital product matrix settings page."""
+    return render_template("product_rules.html")
+
+
 @app.route("/api/settings", methods=["GET"])
 def api_get_settings():
     """Return redacted per-user settings status."""
     return jsonify(get_public_settings())
+
+
+@app.route("/api/product-config", methods=["GET"])
+def api_product_config():
+    """
+    Return the shipped (company-wide) product/department config.
+
+    產品目錄與科別預設是隨程式出貨的公司資料；
+    醫院鎖定規則是個人資料，走 /api/settings。
+    """
+    departments = [
+        {
+            "code": code,
+            "name_zh": info.get("name_zh", ""),
+            "default_products": list(info.get("products", [])),
+        }
+        for code, info in DEPARTMENT_CONFIG.items()
+    ]
+    products = [
+        {
+            "code": code,
+            "family": info.get("family", code),
+            "brand_name": info.get("brand_name", code),
+            "display_name": info.get("display_name", info.get("brand_name", code)),
+            "dose_label": info.get("dose_label", ""),
+            "crm_product_id": str(info.get("crm_product_id", "")),
+        }
+        for code, info in PRODUCT_CATALOG.items()
+    ]
+    return jsonify({"departments": departments, "products": products})
 
 
 @app.route("/api/settings", methods=["POST"])
@@ -160,7 +200,12 @@ def api_parse():
     if text_error:
         return jsonify({"entries": [], "error": text_error}), 400
 
-    entries = parse_visit_list(raw_text)
+    settings = get_effective_settings()
+    hospital_rules = settings.get("hospital_product_rules") or {}
+    entries = parse_visit_list(
+        raw_text, extra_hospitals=collect_hospital_aliases(hospital_rules)
+    )
+    apply_hospital_product_rules(entries, hospital_rules)
     results = []
 
     for entry in entries:
@@ -181,9 +226,11 @@ def api_parse():
         results.append(
             {
                 "customer_name": entry.customer_name,
+                "hospital_name": entry.hospital_name,
                 "department_code": entry.department_code,
                 "department_name_zh": entry.department_name_zh,
                 "matched_products": entry.matched_products,
+                "products_locked": entry.products_locked,
                 "selected_products": products_detail,
                 "raw_line": entry.raw_line,
             }
@@ -229,10 +276,14 @@ def api_execute():
             "settings_path": str(settings_path()),
         }), 400
 
-    # Parse entries
-    entries = parse_visit_list(raw_text)
+    # Parse entries (套用使用者的醫院鎖定規則)
+    hospital_rules = settings.get("hospital_product_rules") or {}
+    entries = parse_visit_list(
+        raw_text, extra_hospitals=collect_hospital_aliases(hospital_rules)
+    )
     if not entries:
         return jsonify({"status": "error", "message": "名單解析失敗，請檢查格式"}), 400
+    apply_hospital_product_rules(entries, hospital_rules)
 
     # 原子性檢查 busy 並佔用執行權，避免兩個請求同時通過檢查
     with _state_lock:

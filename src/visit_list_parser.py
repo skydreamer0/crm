@@ -88,6 +88,8 @@ def load_product_catalog() -> dict:
 # Module-level singletons (loaded once on import)
 DEPARTMENT_MAP: dict = load_department_map()
 PRODUCT_CATALOG: dict = load_product_catalog()
+# Raw ordered department config (code → {name_zh, aliases, products}) for API listing
+DEPARTMENT_CONFIG: dict = _load_yaml("department_mapping.yaml").get("departments", {})
 
 # ---------------------------------------------------------------------------
 # Known hospital names (used to exclude from name detection)
@@ -123,6 +125,9 @@ class VisitEntry:
     department_name_zh: str = ""
     matched_products: list[str] = field(default_factory=list)
     raw_line: str = ""
+    hospital_name: str = ""
+    # True when matched_products comes from a hospital+department locked rule
+    products_locked: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -161,12 +166,12 @@ _DEPT_KEYWORDS = {
 }
 
 
-def _is_chinese_name(token: str) -> bool:
+def _is_chinese_name(token: str, hospitals: set[str] | None = None) -> bool:
     """Heuristic: a 2-4 CJK character string that isn't a hospital or dept."""
     normed = _normalise_token(token)
     if not _CJK_NAME_RE.match(normed):
         return False
-    if normed in KNOWN_HOSPITALS:
+    if normed in (hospitals or KNOWN_HOSPITALS):
         return False
     if DEPARTMENT_MAP.get(normed):
         return False
@@ -179,13 +184,17 @@ def _is_chinese_name(token: str) -> bool:
     return True
 
 
-def parse_single_entry(line: str) -> Optional[VisitEntry]:
+def parse_single_entry(line: str, extra_hospitals: Optional[set[str]] = None) -> Optional[VisitEntry]:
     """
     Parse a single line like '慈濟/URO/吳書雨/B' or '永耕/URO/楊弘如/A08:30'.
+
+    `extra_hospitals` 補充使用者自訂的醫院名稱/別名（來自 hospital_product_rules），
+    讓自訂醫院不會被誤判成客戶姓名。
 
     Returns a VisitEntry with customer_name and department info,
     or None if the line is blank / unparseable.
     """
+    hospitals = KNOWN_HOSPITALS | (extra_hospitals or set())
     line = line.strip()
     if not line:
         return None
@@ -204,7 +213,14 @@ def parse_single_entry(line: str) -> Optional[VisitEntry]:
     tokens = [_normalise_token(t) for t in tokens if _normalise_token(t)]
 
     customer_name: str = ""
+    hospital_name: str = ""
     dept_info: Optional[dict] = None
+
+    # Pass 0: identify hospital (longest matching token wins, e.g. 耕莘安康 > 耕莘)
+    for token in tokens:
+        normed = _normalise_token(token)
+        if normed in hospitals and len(normed) > len(hospital_name):
+            hospital_name = normed
 
     # Pass 1: identify department
     for token in tokens:
@@ -216,7 +232,7 @@ def parse_single_entry(line: str) -> Optional[VisitEntry]:
     # Pass 2: identify customer name
     #   Priority: first CJK 2-4 char token that isn't hospital/dept
     for token in tokens:
-        if _is_chinese_name(token):
+        if _is_chinese_name(token, hospitals):
             customer_name = token
             break
 
@@ -227,7 +243,7 @@ def parse_single_entry(line: str) -> Optional[VisitEntry]:
             normed = _normalise_token(token)
             if _GRADE_RE.match(normed):
                 continue
-            if normed in KNOWN_HOSPITALS:
+            if normed in hospitals:
                 continue
             if _identify_department(normed):
                 continue
@@ -242,6 +258,7 @@ def parse_single_entry(line: str) -> Optional[VisitEntry]:
     entry = VisitEntry(
         customer_name=customer_name,
         raw_line=line,
+        hospital_name=hospital_name,
     )
 
     if dept_info:
@@ -258,7 +275,7 @@ def parse_single_entry(line: str) -> Optional[VisitEntry]:
     return entry
 
 
-def parse_visit_list(text: str) -> list[VisitEntry]:
+def parse_visit_list(text: str, extra_hospitals: Optional[set[str]] = None) -> list[VisitEntry]:
     """
     Parse multi-line visit list text into structured entries.
 
@@ -271,7 +288,7 @@ def parse_visit_list(text: str) -> list[VisitEntry]:
     """
     entries: list[VisitEntry] = []
     for line in text.strip().splitlines():
-        entry = parse_single_entry(line)
+        entry = parse_single_entry(line, extra_hospitals=extra_hospitals)
         if entry:
             entries.append(entry)
             logger.info(
@@ -287,20 +304,134 @@ def parse_visit_list(text: str) -> list[VisitEntry]:
 
 
 # ---------------------------------------------------------------------------
+# Hospital+department product rules (per-user settings)
+# ---------------------------------------------------------------------------
+
+
+def collect_hospital_aliases(hospital_product_rules: Optional[dict]) -> set[str]:
+    """Collect all hospital names and aliases from user rules (for parsing)."""
+    aliases: set[str] = set()
+    for hospital in (hospital_product_rules or {}).values():
+        if not isinstance(hospital, dict):
+            continue
+        name = str(hospital.get("name") or "").strip()
+        if name:
+            aliases.add(name)
+        for alias in hospital.get("aliases") or []:
+            alias = str(alias or "").strip()
+            if alias:
+                aliases.add(alias)
+    return aliases
+
+
+def find_hospital_department_rule(entry: VisitEntry, hospital_product_rules: dict) -> Optional[dict]:
+    """
+    Find the rule for this entry's hospital+department.
+
+    醫院比對：規則的 name/aliases 與 entry.hospital_name 完全相等，
+    或 alias 是 hospital_name 的一部分（如 安康 ⊂ 耕莘安康院區）。
+    多間醫院命中時取最長的 alias（耕莘安康 勝過 耕莘）。
+    """
+    if not hospital_product_rules or not entry.department_code:
+        return None
+
+    haystack = entry.hospital_name or ""
+    best: Optional[dict] = None
+    best_len = 0
+    for hospital in hospital_product_rules.values():
+        if not isinstance(hospital, dict):
+            continue
+        candidates = [str(hospital.get("name") or "")] + [
+            str(a or "") for a in (hospital.get("aliases") or [])
+        ]
+        for alias in candidates:
+            alias = alias.strip()
+            if not alias:
+                continue
+            hit = alias == haystack or (haystack and alias in haystack) \
+                or (not haystack and alias in entry.raw_line)
+            if hit and len(alias) > best_len:
+                best = hospital
+                best_len = len(alias)
+
+    if not best:
+        return None
+    departments = best.get("departments")
+    if not isinstance(departments, dict):
+        return None
+    rule = departments.get(entry.department_code)
+    return rule if isinstance(rule, dict) else None
+
+
+def resolve_matched_products(
+    entry: VisitEntry,
+    hospital_product_rules: Optional[dict] = None,
+) -> tuple[list[str], bool]:
+    """
+    Resolve the product list for an entry.
+
+    Returns (products, locked)。locked=True 表示命中鎖定規則，
+    產品清單必須原樣使用（不做 ELI 科別過濾）。
+    """
+    rule = find_hospital_department_rule(entry, hospital_product_rules or {})
+    if rule and rule.get("mode") == "locked":
+        return [str(p) for p in (rule.get("products") or [])], True
+    return list(entry.matched_products), False
+
+
+def apply_hospital_product_rules(
+    entries: list[VisitEntry],
+    hospital_product_rules: Optional[dict],
+) -> list[VisitEntry]:
+    """
+    Apply locked hospital rules onto parsed entries (in place).
+
+    在 parse 之後呼叫一次，之後所有下游（預覽/自動化）都用同一份結果。
+    """
+    if not hospital_product_rules:
+        return entries
+    for entry in entries:
+        products, locked = resolve_matched_products(entry, hospital_product_rules)
+        if locked:
+            entry.matched_products = products
+            entry.products_locked = True
+            logger.info(
+                "  🔒 套用鎖定規則: %s(%s) → %s",
+                entry.hospital_name or entry.customer_name,
+                entry.department_code,
+                products,
+            )
+    return entries
+
+
+# ---------------------------------------------------------------------------
 # Convenience: auto-select 2 products from matched list
 # ---------------------------------------------------------------------------
 
 
-def select_products(entry: VisitEntry, count: int = 2) -> list[str]:
+def _is_eli(product_code: str) -> bool:
+    return product_code == "eli" or product_code.startswith("eli_")
+
+
+def select_products(
+    entry: VisitEntry,
+    count: int = 2,
+    hospital_product_rules: Optional[dict] = None,
+) -> list[str]:
     """
     From an entry's matched_products, select up to `count` products.
-    Returns product codes (e.g. ['uri', 'eli']).
+    Returns product codes (e.g. ['uri', 'eli_22_5']).
 
-    Hard Rule: ELIGARD (eli) only allowed for URO (Urology) and PED (Pediatrics).
+    Hard Rule: ELIGARD (eli_*) only allowed for URO (Urology) and PED (Pediatrics),
+    除非產品清單來自醫院鎖定規則（使用者明確指定）。
     """
+    products, locked = resolve_matched_products(entry, hospital_product_rules)
+    if locked or entry.products_locked:
+        return products[:count]
+
     filtered = []
-    for p in entry.matched_products:
-        if p == "eli" and entry.department_code not in ["URO", "PED"]:
+    for p in products:
+        if _is_eli(p) and entry.department_code not in ["URO", "PED"]:
             continue
         filtered.append(p)
     return filtered[:count]
@@ -316,34 +447,14 @@ def get_product_info(product_code: str) -> dict:
 
 def resolve_crm_product_id(product_code: str, entry: VisitEntry) -> str:
     """
-    Resolve the correct CRM Product ID (e.g., '21363' or 'T5EL0').
-    Evaluates dynamic rules based on customer name and department.
+    Resolve the CRM Product ID (e.g., '21363' or 'T5EL2') for a SKU code.
+
+    每個 SKU（含 Eligard 各劑量）都有固定編號，不再依醫院/科別動態判定；
+    醫院差異改由 hospital_product_rules 鎖定 SKU 本身。
     """
     info = get_product_info(product_code)
-    pid = info.get("crm_product_id", "")
-    
-    # Normal case
-    if pid and pid != "DYNAMIC":
-        return str(pid)
-        
-    # Dynamic logic case (e.g. ELI)
-    rules = info.get("crm_dynamic_rules", [])
-    for rule in rules:
-        cond = rule.get("condition", "")
-        target_id = str(rule.get("product_id", ""))
-        
-        if "customer_name contains" in cond:
-            keyword = cond.split("'")[1]
-            if keyword in entry.customer_name:
-                return target_id
-        elif "department_code ==" in cond:
-            code = cond.split("'")[1]
-            if entry.department_code == code:
-                return target_id
-        elif cond == "default":
-            return target_id
-            
-    return ""
+    pid = str(info.get("crm_product_id", "") or "")
+    return pid if pid != "DYNAMIC" else ""
 
 def should_skip_visit_content(product_code: str) -> bool:
     """Check if the product should skip the Visit Content field."""
