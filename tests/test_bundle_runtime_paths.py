@@ -31,8 +31,12 @@ products:
     monkeypatch.setattr(sys, "_MEIPASS", str(bundle_dir), raising=False)
     sys.modules.pop("visit_list_parser", None)
 
-    module = importlib.import_module("visit_list_parser")
+    try:
+        module = importlib.import_module("visit_list_parser")
 
-    assert module._CONFIG_DIR == config_dir
-    assert module.DEPARTMENT_MAP["URO"]["products"] == ["uri"]
-    assert module.PRODUCT_CATALOG["uri"]["brand_name"] == "URI"
+        assert module._CONFIG_DIR == config_dir
+        assert module.DEPARTMENT_MAP["URO"]["products"] == ["uri"]
+        assert module.PRODUCT_CATALOG["uri"]["brand_name"] == "URI"
+    finally:
+        # 踢掉載入 stub config 的模組，避免污染後續測試的 import
+        sys.modules.pop("visit_list_parser", None)
