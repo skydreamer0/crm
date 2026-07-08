@@ -1,57 +1,90 @@
 # 打包與發佈指南 (RELEASE)
 
-本專案是單機 Windows 工具，以 PyInstaller 打包成免安裝的資料夾，透過 **GitHub Releases** 分享給其他使用者。zip 內含 Python runtime 與 Chromium 瀏覽器，**收到的人不需要安裝任何東西**。
+目前發布版本：`v1.1.0`
 
----
+本專案是單機 Windows 工具，以 PyInstaller 打包成免安裝資料夾，並透過 GitHub Releases 分享給使用者。zip 內含 Python runtime 與 Playwright Chromium，使用者不需要另外安裝 Python 或瀏覽器。
 
-## 方式一：GitHub 自動發佈（建議）
+## v1.1.0 更新重點
 
-推送一個 `v` 開頭的 tag，GitHub Actions 會自動在 Windows runner 上跑測試、打包、建立 Release：
+- 新增「醫院產品矩陣」設定頁：`/settings/products`
+- 可依「醫院 + 科別」鎖定實際要建立的產品 SKU
+- 新增 `/api/product-config`，提供產品 SKU 與科別預設產品給前端載入
+- `hospital_product_rules` 會儲存在 `%APPDATA%\crm-automation\settings.json`
+- 產品矩陣只更新產品規則，不會覆蓋既有 CRM 帳密設定
+- Eligard 拆成 SKU：
+  - `eli_7_5` -> `T5EL0`
+  - `eli_22_5` -> `T5EL1`
+  - `eli_45` -> `T5EL2`
+- 名單預覽與實際執行會先套用醫院鎖定規則，沒有鎖定時才使用科別 fallback
+
+## GitHub 自動發佈
+
+推送一個 `v` 開頭的 tag，GitHub Actions 會在 Windows runner 上執行測試、打包，並建立 GitHub Release：
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
-幾分鐘後到 GitHub 的 **Releases** 頁面就會出現 `CRM-Automation-v1.0.0-windows.zip`，把 Release 頁面連結傳給要使用的人即可。
+幾分鐘後到 GitHub Releases 頁面下載：
 
-- Workflow 定義：[.github/workflows/release.yml](../.github/workflows/release.yml)
-- 版本號建議用 [語意化版本](https://semver.org/lang/zh-TW/)：修 bug 進版 `v1.0.1`、加功能進版 `v1.1.0`
+```text
+CRM-Automation-v1.1.0-windows.zip
+```
 
-另外每次 push 到 `main` 或開 PR 時，[ci.yml](../.github/workflows/ci.yml) 會自動跑測試。
+相關 workflow：
 
-## 方式二：本地打包
+- Release build: [.github/workflows/release.yml](../.github/workflows/release.yml)
+- CI tests: [.github/workflows/ci.yml](../.github/workflows/ci.yml)
 
-不想經過 GitHub 時（例如快速給同事測試版）：
+版本號建議使用語意化版本：
+
+- bug fix：`v1.1.1`
+- 新功能：`v1.2.0`
+- 不相容改版：`v2.0.0`
+
+## 本地手動打包
+
+若不透過 GitHub Actions，可以在本機執行：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -Version v1.0.0
+powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -Version v1.1.0
 ```
 
-產出 `dist\CRM-Automation-v1.0.0-windows.zip`，直接傳給對方。加 `-SkipTests` 可跳過測試。
+產出：
 
-> **注意**：腳本會以 `PLAYWRIGHT_BROWSERS_PATH=0` 把 Chromium（約 300MB）安裝到目前 Python 環境的 playwright 套件目錄內，這是讓 PyInstaller 能把瀏覽器收進 bundle 的必要步驟，只需第一次會下載。
+```text
+dist\CRM-Automation-v1.1.0-windows.zip
+```
 
-## 打包原理（維護時需要知道的事）
+可加上 `-SkipTests` 跳過測試，但正式發佈前不建議略過。
 
-| 元件 | 機制 |
-|------|------|
-| 進入點 | `src/app.py`，spec 檔為 [crm_automation.spec](../crm_automation.spec)（onedir 模式） |
-| 模板與設定 | `src/templates` 和 `config/` 以 datas 收進 bundle，程式內以 `_resource_path()`（`sys._MEIPASS`）解析 |
-| Chromium | 建置時 `PLAYWRIGHT_BROWSERS_PATH=0` + `playwright install chromium` 裝進套件目錄 → PyInstaller hook 自動收集；執行時 `app.py` 偵測 frozen 模式設定同一變數，playwright 便從 bundle 內找瀏覽器 |
-| 主控台視窗 | 刻意保留（`console=True`），使用者可看 log，關閉視窗即停止伺服器 |
-| 使用者設定 | 存於 `%APPDATA%\crm-automation\settings.json`，密碼以 Windows DPAPI 加密，與 exe 位置無關（更新版本不會遺失設定） |
-| 執行紀錄 | 寫到 exe 所在資料夾的 `logs/`（history JSON 與截圖） |
+## 打包注意事項
 
----
+| 項目 | 說明 |
+| --- | --- |
+| 入口程式 | `src/app.py`，spec 定義在 [crm_automation.spec](../crm_automation.spec) |
+| 模板與設定檔 | `src/templates` 與 `config/` 會一起 bundle，執行時透過 `_resource_path()` 支援 `sys._MEIPASS` |
+| Chromium | 設定 `PLAYWRIGHT_BROWSERS_PATH=0` 並執行 `playwright install chromium`，讓 PyInstaller hook 能把瀏覽器一起打包 |
+| 使用者設定 | 儲存在 `%APPDATA%\crm-automation\settings.json`，密碼以 Windows DPAPI 保護 |
+| 產品規則 | `hospital_product_rules` 也是使用者設定，換新版 exe 後仍會沿用同一份 AppData 設定 |
+| 執行紀錄 | 自動化歷史與截圖輸出到 `logs/` |
 
-## 給使用者的安裝說明（可直接複製傳給對方）
+## 給使用者的更新說明
 
-> 1. 打開我傳給你的 GitHub Release 連結，下載 `CRM-Automation-vX.X.X-windows.zip`
-> 2. 解壓縮到任意資料夾（例如 `D:\CRM-Automation`）
-> 3. 進入資料夾，雙擊 `CRM-Automation.exe`——會出現一個黑色視窗（請不要關閉，它是伺服器），瀏覽器會自動開啟操作介面
-> 4. 第一次使用：點右上角「⚙️ 設定」，填入 CRM 網址、帳號、密碼後儲存
-> 5. 回主頁貼入待訪名單 → 解析名單 → 執行自動化；跑完看「填寫檢核」報告，有缺漏會列出要補的名單
-> 6. 用完關掉黑色視窗即可
->
-> 註：Windows 可能跳出「Windows 已保護您的電腦」，點「其他資訊」→「仍要執行」（因為程式沒有數位簽章）。更新新版本時直接解壓覆蓋即可，設定不會遺失。
+1. 到 GitHub Releases 下載 `CRM-Automation-v1.1.0-windows.zip`
+2. 解壓縮到固定資料夾，例如 `D:\CRM-Automation`
+3. 執行 `CRM-Automation.exe`
+4. 第一次使用先到「設定」填 CRM 網址、帳號、密碼
+5. 若要依醫院固定產品，進入「醫院產品矩陣」
+6. 新增醫院名稱與別名，例如 `北醫, 北醫附醫, 台北醫學大學附設醫院`
+7. 只有需要固定產品的「醫院 + 科別」才切成 `Locked`；其他維持 `Fallback`
+8. 設定完記得按右上角「儲存」
+
+## 發佈前檢查
+
+```powershell
+python -m pytest tests/ -q
+```
+
+確認測試通過後再推 tag。GitHub Release workflow 也會再跑一次完整測試與打包。

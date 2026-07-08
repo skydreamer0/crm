@@ -1,5 +1,5 @@
 # 本地打包腳本 — 產出可分享的 Windows zip
-# 用法: powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 [-Version v1.0.0] [-SkipTests]
+# 用法: powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 [-Version v1.1.0] [-SkipTests]
 param(
     [string]$Version = "dev",
     [switch]$SkipTests
