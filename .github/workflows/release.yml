@@ -15,7 +15,10 @@ env:
 
 jobs:
   build-release:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,18 +40,18 @@ jobs:
         run: python -m PyInstaller crm_automation.spec --noconfirm
 
       - name: Package zip
-        run: Compress-Archive -Path dist/CRM-Automation -DestinationPath "dist/CRM-Automation-${{ github.ref_name }}-windows.zip"
+        run: python -c "import shutil; shutil.make_archive('dist/CRM-Automation-${{ github.ref_name }}-${{ runner.os }}', 'zip', 'dist/CRM-Automation')"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/CRM-Automation-${{ github.ref_name }}-windows.zip
+          files: dist/CRM-Automation-${{ github.ref_name }}-${{ runner.os }}.zip
           generate_release_notes: true
           body: |
-            ## 安裝方式（Windows）
-            1. 下載下方的 `CRM-Automation-${{ github.ref_name }}-windows.zip`
+            ## 安裝方式（Windows / Mac）
+            1. 依據您的作業系統下載下方的 `.zip` 檔
             2. 解壓縮到任意資料夾
-            3. 執行 `CRM-Automation.exe`，瀏覽器會自動開啟操作介面
+            3. 執行 `CRM-Automation` 程式（Windows 為 `.exe`），瀏覽器會自動開啟操作介面
             4. 第一次使用請先點右上角「⚙️ 設定」填入 CRM 網址與帳號密碼
 
             無須安裝 Python 或瀏覽器，所有相依已包含在 zip 內。

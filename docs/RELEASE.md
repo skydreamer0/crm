@@ -1,8 +1,11 @@
 # 打包與發佈指南 (RELEASE)
 
-目前發布版本：`v1.1.1`
+目前發布版本：`v1.2.0`
 
 本專案是單機 Windows 工具，以 PyInstaller 打包成免安裝資料夾，並透過 GitHub Releases 分享給使用者。zip 內含 Python runtime 與 Playwright Chromium，使用者不需要另外安裝 Python 或瀏覽器。
+
+## v1.2.0 更新重點
+- 支援 macOS 打包，提供 `CRM-Automation-v1.2.0-macOS.zip` 供 Mac 使用者下載。
 
 ## v1.1.0 更新重點
 
@@ -22,14 +25,15 @@
 推送一個 `v` 開頭的 tag，GitHub Actions 會在 Windows runner 上執行測試、打包，並建立 GitHub Release：
 
 ```bash
-git tag v1.1.0
-git push origin v1.1.0
+git tag v1.2.0
+git push origin v1.2.0
 ```
 
 幾分鐘後到 GitHub Releases 頁面下載：
 
 ```text
-CRM-Automation-v1.1.0-windows.zip
+CRM-Automation-v1.2.0-Windows.zip
+CRM-Automation-v1.2.0-macOS.zip
 ```
 
 相關 workflow：
@@ -48,13 +52,13 @@ CRM-Automation-v1.1.0-windows.zip
 若不透過 GitHub Actions，可以在本機執行：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -Version v1.1.0
+powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -Version v1.2.0
 ```
 
 產出：
 
 ```text
-dist\CRM-Automation-v1.1.0-windows.zip
+dist\CRM-Automation-v1.2.0-windows.zip
 ```
 
 可加上 `-SkipTests` 跳過測試，但正式發佈前不建議略過。
@@ -72,9 +76,9 @@ dist\CRM-Automation-v1.1.0-windows.zip
 
 ## 給使用者的更新說明
 
-1. 到 GitHub Releases 下載 `CRM-Automation-v1.1.0-windows.zip`
-2. 解壓縮到固定資料夾，例如 `D:\CRM-Automation`
-3. 執行 `CRM-Automation.exe`
+1. 到 GitHub Releases 下載對應您作業系統的 `CRM-Automation-v1.2.0-Windows.zip` 或 `CRM-Automation-v1.2.0-macOS.zip`
+2. 解壓縮到固定資料夾，例如 `D:\CRM-Automation` (Windows) 或您的應用程式資料夾 (Mac)
+3. 執行 `CRM-Automation` (Windows 為 `.exe`)
 4. 第一次使用先到「設定」填 CRM 網址、帳號、密碼
 5. 若要依醫院固定產品，進入「醫院產品矩陣」
 6. 新增醫院名稱與別名，例如 `北醫, 北醫附醫, 台北醫學大學附設醫院`
