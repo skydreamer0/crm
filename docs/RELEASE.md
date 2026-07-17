@@ -1,6 +1,6 @@
 # 打包與發佈指南 (RELEASE)
 
-目前發布版本：`v1.1.0`
+目前發布版本：`v1.1.1`
 
 本專案是單機 Windows 工具，以 PyInstaller 打包成免安裝資料夾，並透過 GitHub Releases 分享給使用者。zip 內含 Python runtime 與 Playwright Chromium，使用者不需要另外安裝 Python 或瀏覽器。
 
