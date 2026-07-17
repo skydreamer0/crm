@@ -69,7 +69,7 @@ dist\CRM-Automation-v1.2.0-windows.zip
 | --- | --- |
 | 入口程式 | `src/app.py`，spec 定義在 [crm_automation.spec](../crm_automation.spec) |
 | 模板與設定檔 | `src/templates` 與 `config/` 會一起 bundle，執行時透過 `_resource_path()` 支援 `sys._MEIPASS` |
-| Chromium | 設定 `PLAYWRIGHT_BROWSERS_PATH=0` 並執行 `playwright install chromium`，讓 PyInstaller hook 能把瀏覽器一起打包 |
+| Chromium | 建置時不使用 `PLAYWRIGHT_BROWSERS_PATH=0`，讓 PyInstaller 略過打包瀏覽器，避開 macOS codesign 錯誤。在 PyInstaller 執行完畢後，另外透過設定 `PLAYWRIGHT_BROWSERS_PATH=dist/CRM-Automation/browsers` 執行安裝，再進行 zip 壓縮。 |
 | 使用者設定 | 儲存在 `%APPDATA%\crm-automation\settings.json`，密碼以 Windows DPAPI 保護 |
 | 產品規則 | `hospital_product_rules` 也是使用者設定，換新版 exe 後仍會沿用同一份 AppData 設定 |
 | 執行紀錄 | 自動化歷史與截圖輸出到 `logs/` |

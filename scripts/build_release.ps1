@@ -11,11 +11,8 @@ Set-Location (Join-Path $PSScriptRoot "..")
 Write-Host "[1/5] 安裝建置依賴..." -ForegroundColor Cyan
 python -m pip install -r requirements.txt pyinstaller pytest
 
-# PLAYWRIGHT_BROWSERS_PATH=0 讓 Chromium 安裝進 playwright 套件目錄，
-# PyInstaller 的 playwright hook 會把它一併收進 bundle
-$env:PLAYWRIGHT_BROWSERS_PATH = "0"
-
-Write-Host "[2/5] 下載 Chromium (裝進 playwright 套件目錄)..." -ForegroundColor Cyan
+# 確保 Playwright 下載到一般快取中供測試使用
+Write-Host "[2/5] 下載 Chromium..." -ForegroundColor Cyan
 python -m playwright install chromium
 
 if (-not $SkipTests) {
@@ -28,8 +25,12 @@ if (-not $SkipTests) {
 Write-Host "[4/5] PyInstaller 打包..." -ForegroundColor Cyan
 python -m PyInstaller crm_automation.spec --noconfirm
 
-Write-Host "[5/5] 壓縮..." -ForegroundColor Cyan
-$zipPath = "dist/CRM-Automation-$Version-windows.zip"
+Write-Host "[5/5] 下載 Chromium (裝進 dist 供發布)..." -ForegroundColor Cyan
+$env:PLAYWRIGHT_BROWSERS_PATH = "dist/CRM-Automation/browsers"
+python -m playwright install chromium
+
+Write-Host "[6/6] 壓縮..." -ForegroundColor Cyan
+$zipPath = "dist/CRM-Automation-$Version-Windows.zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path "dist/CRM-Automation" -DestinationPath $zipPath
 

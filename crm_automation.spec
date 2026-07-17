@@ -1,9 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 # PyInstaller spec for CRM Automation (Windows onedir build)
 #
-# 建置前必須設定 PLAYWRIGHT_BROWSERS_PATH=0 並執行 playwright install chromium，
-# 讓 Chromium 安裝進 playwright 套件目錄，PyInstaller 的 playwright hook 才會
-# 把瀏覽器一併收進 bundle（app.py 在 frozen 模式會設定同一個環境變數來找到它）。
+# 建置時不設定 PLAYWRIGHT_BROWSERS_PATH，讓 PyInstaller 略過打包瀏覽器，
+# 藉此避開 macOS 上的 codesign 錯誤。
+# 瀏覽器會在 PyInstaller 執行完畢後，由 GitHub Actions 另外下載並放入 dist/CRM-Automation/browsers/
 # 詳見 docs/RELEASE.md 或直接執行 scripts/build_release.ps1。
 
 a = Analysis(

@@ -28,7 +28,8 @@ from pathlib import Path
 # 打包版將 Chromium 一併收在 bundle 內 (見 crm_automation.spec)，
 # 需在 import playwright 之前指定從套件目錄尋找瀏覽器
 if getattr(sys, "frozen", False):
-    os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", "0")
+    exe_dir = os.path.dirname(sys.executable)
+    os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", os.path.join(exe_dir, "browsers"))
 
 # === 第三方套件 ===
 from flask import Flask, render_template, request, jsonify

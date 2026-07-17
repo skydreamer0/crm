@@ -8,11 +8,6 @@ on:
 permissions:
   contents: write # 建立 GitHub Release 需要
 
-env:
-  # 讓 Chromium 安裝進 playwright 套件目錄，PyInstaller hook 才會收進 bundle。
-  # 打包與安裝步驟都需要這個變數，故設在 job 層級。
-  PLAYWRIGHT_BROWSERS_PATH: "0"
-
 jobs:
   build-release:
     strategy:
@@ -38,6 +33,11 @@ jobs:
 
       - name: Build with PyInstaller
         run: python -m PyInstaller crm_automation.spec --noconfirm
+
+      - name: Bundle Chromium for distribution
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: dist/CRM-Automation/browsers
+        run: python -m playwright install chromium
 
       - name: Package zip
         run: python -c "import shutil; shutil.make_archive('dist/CRM-Automation-${{ github.ref_name }}-${{ runner.os }}', 'zip', 'dist/CRM-Automation')"
