@@ -169,10 +169,12 @@
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 16px;
+            align-items: start;
         }
 
         .settings-field {
-            display: grid;
+            display: flex;
+            flex-direction: column;
             gap: 7px;
         }
 
@@ -197,7 +199,7 @@
             color: var(--text-primary);
             font-family: inherit;
             font-size: 14px;
-            min-height: 42px;
+            height: 42px;
             outline: none;
             padding: 10px 12px;
             transition: var(--transition);
