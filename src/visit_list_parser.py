@@ -427,7 +427,9 @@ def select_products(
     """
     products, locked = resolve_matched_products(entry, hospital_product_rules)
     if locked or entry.products_locked:
-        return products[:count]
+        # 鎖定規則是使用者明確指定的清單，必須原樣使用；
+        # count 截斷只適用於 fallback 自動挑選，否則排在後面的劑量（如 eli_45）會被砍掉。
+        return products
 
     filtered = []
     for p in products:

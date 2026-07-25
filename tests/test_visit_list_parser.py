@@ -234,6 +234,20 @@ class TestLockedRules:
         e = parse_single_entry("耕莘安康/URO/彭崇信/B")
         assert select_products(e, count=2, hospital_product_rules=HOSPITAL_RULES) == ["uri"]
 
+    def test_locked_rule_keeps_all_products_beyond_count(self):
+        # 鎖定 3 個產品且 eli_45 排最後，不可因 count=2 被截掉
+        rules = {
+            "skh": {
+                "name": "新光醫院",
+                "aliases": ["新光"],
+                "departments": {
+                    "URO": {"mode": "locked", "products": ["uri", "oxb", "eli_45"], "note": ""}
+                },
+            }
+        }
+        e = parse_single_entry("新光/URO/蔡醫師/A")
+        assert select_products(e, count=2, hospital_product_rules=rules) == ["uri", "oxb", "eli_45"]
+
     def test_apply_rules_marks_entries_locked(self):
         entries = parse_visit_list("新光/URO/蔡醫師/A\n馬偕/URO/王小明/A")
         apply_hospital_product_rules(entries, HOSPITAL_RULES)
