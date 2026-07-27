@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from visit_list_parser import (
     apply_hospital_product_rules,
     collect_hospital_aliases,
+    get_random_description,
     parse_single_entry,
     parse_visit_list,
     resolve_crm_product_id,
@@ -121,6 +122,22 @@ class TestProductMatching:
         selected = select_products(e, count=2)
         assert len(selected) == 2
         assert selected == ["uri", "eli_22_5"]
+
+
+class TestProductDescriptions:
+
+    def test_pediatrics_eli_45_uses_bound_key_message(self):
+        assert get_random_description("eli_45", "PED") == (
+            "ATRIGEL 釋放技術、注射體積小且針頭短，降低疼痛不適。"
+        )
+
+    def test_other_departments_keep_default_eli_45_messages(self):
+        assert get_random_description("eli_45", "URO") in {
+            "採創新的 ATRIGEL 釋放技術，注射體積小且針頭短，大幅降低患者的疼痛不適。",
+            "具備 2 倍於傳統劑型的效力，能穩定抑制睪固酮 T < 20 ng/dL，效果媲美手術去勢。",
+            "臨床證據顯示能延緩進入 CRPC 達 10 年以上，提供長期穩定的攝護腺癌控制。",
+        }
+
 
 class TestEligardRestriction:
 

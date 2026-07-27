@@ -493,7 +493,7 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None, st
         if entry and entry.matched_products:
             # 第一個優先配對的產品
             main_product = entry.matched_products[0]
-            description = get_random_description(main_product)
+            description = get_random_description(main_product, entry.department_code)
             
             if description:
                 desc_field = await popup_frame.wait_for_selector(

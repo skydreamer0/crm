@@ -124,6 +124,20 @@ def test_parse_applies_locked_hospital_rules(client):
     assert [p["code"] for p in fallback["selected_products"]] == ["uri", "eli_22_5"]
 
 
+def test_parse_binds_pediatrics_eli_key_message(client):
+    response = client.post(
+        "/api/parse",
+        json={"text": "新光/PED/林小明/C"},
+    )
+
+    assert response.status_code == 200
+    products = response.get_json()["entries"][0]["selected_products"]
+    eli = next(product for product in products if product["code"] == "eli_45")
+    assert eli["description"] == (
+        "ATRIGEL 釋放技術、注射體積小且針頭短，降低疼痛不適。"
+    )
+
+
 def test_execute_requires_configured_credentials(client):
     response = client.post(
         "/api/execute",

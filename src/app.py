@@ -214,7 +214,7 @@ def api_parse():
         products_detail = []
         for code in selected:
             info = get_product_info(code)
-            desc = get_random_description(code)
+            desc = get_random_description(code, entry.department_code)
             products_detail.append(
                 {
                     "code": code,

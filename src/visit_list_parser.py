@@ -464,13 +464,22 @@ def should_skip_visit_content(product_code: str) -> bool:
     return bool(info.get("skip_visit_content", False))
 
 
-def get_random_description(product_code: str) -> str:
+def get_random_description(product_code: str, department_code: str = "") -> str:
     """
-    Randomly select one description from the product's list.
+    Select a department-specific description when configured; otherwise
+    randomly select one description from the product's default list.
     """
     info = get_product_info(product_code)
+    department_descriptions = info.get("department_descriptions", {})
+    if isinstance(department_descriptions, dict):
+        scoped_descs = department_descriptions.get(
+            (department_code or "").strip().upper(), []
+        )
+        if isinstance(scoped_descs, list) and scoped_descs:
+            return random.choice(scoped_descs)
+
     descs = info.get("descriptions", [])
-    if not descs:
+    if not isinstance(descs, list) or not descs:
         return ""
     return random.choice(descs)
 

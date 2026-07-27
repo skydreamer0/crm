@@ -48,6 +48,9 @@ products:
     generic_name: Leuprolide Acetate
     crm_search_term: "T5EL2"
     crm_product_id: "T5EL2"
+    department_descriptions:
+      PED:
+        - ATRIGEL 釋放技術、注射體積小且針頭短，降低疼痛不適。
     descriptions:
       - 採創新的 ATRIGEL 釋放技術，注射體積小且針頭短，大幅降低患者的疼痛不適。
       - 具備 2 倍於傳統劑型的效力，能穩定抑制睪固酮 T < 20 ng/dL，效果媲美手術去勢。
