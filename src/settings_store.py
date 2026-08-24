@@ -36,20 +36,15 @@ def settings_path() -> Path:
 
 def load_saved_settings() -> dict[str, Any]:
     """Load saved settings with secrets decrypted when possible."""
-    path = settings_path()
-    if not path.exists():
-        return _empty_settings()
-
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    data = _load_raw_settings()
+    if not data:
         return _empty_settings()
 
     return {
         "crm_base_url": _as_text(data.get("crm_base_url")),
         "crm_username": _as_text(data.get("crm_username")),
         "crm_password": _decode_secret(data.get("crm_password")),
-        "headless": _as_bool(data.get("headless"), default=False),
+        "headless": _as_bool(data.get("headless"), default=None) if "headless" in data else None,
         "hospital_product_rules": _sanitize_hospital_product_rules(
             data.get("hospital_product_rules")
         ),
@@ -98,11 +93,18 @@ def save_settings(payload: dict[str, Any]) -> dict[str, Any]:
             raw[field] = None
 
     path = settings_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(raw, ensure_ascii=False, indent=2, sort_keys=True),
-        encoding="utf-8",
-    )
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(raw, ensure_ascii=False, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+    except PermissionError:
+        local_path = Path.cwd() / SETTINGS_FILE_NAME
+        local_path.write_text(
+            json.dumps(raw, ensure_ascii=False, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
     return get_public_settings()
 
 
@@ -111,11 +113,13 @@ def get_effective_settings() -> dict[str, Any]:
     _load_dotenv_for_source_runtime()
     saved = load_saved_settings()
 
+    headless = saved["headless"] if saved.get("headless") is not None else _env_headless()
+
     return {
         "crm_base_url": saved["crm_base_url"] or os.getenv("CRM_BASE_URL", DEFAULT_CRM_BASE_URL),
         "crm_username": saved["crm_username"] or os.getenv("CRM_USERNAME", ""),
         "crm_password": saved["crm_password"] or os.getenv("CRM_PASSWORD", ""),
-        "headless": saved["headless"] if "headless" in saved else _env_headless(),
+        "headless": headless,
         "hospital_product_rules": saved["hospital_product_rules"],
     }
 
@@ -150,7 +154,7 @@ def _empty_settings() -> dict[str, Any]:
         "crm_base_url": "",
         "crm_username": "",
         "crm_password": "",
-        "headless": False,
+        "headless": None,
         "hospital_product_rules": {},
     }
 
@@ -211,11 +215,22 @@ def _sanitize_hospital_product_rules(value: Any) -> dict[str, Any]:
 def _load_raw_settings() -> dict[str, Any]:
     path = settings_path()
     if not path.exists():
-        return {}
+        fallback = Path.cwd() / SETTINGS_FILE_NAME
+        if fallback.exists():
+            path = fallback
+        else:
+            return {}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         return data if isinstance(data, dict) else {}
     except (OSError, json.JSONDecodeError):
+        fallback = Path.cwd() / SETTINGS_FILE_NAME
+        if fallback.exists():
+            try:
+                data = json.loads(fallback.read_text(encoding="utf-8"))
+                return data if isinstance(data, dict) else {}
+            except (OSError, json.JSONDecodeError):
+                pass
         return {}
 
 

@@ -854,7 +854,9 @@
         async function loadSettings() {
             try {
                 const res = await fetch('/api/settings');
-                const data = await res.json();
+                const text = await res.text();
+                let data;
+                try { data = JSON.parse(text); } catch { data = { message: `伺服器回應錯誤 (${res.status})` }; }
                 if (!res.ok) throw new Error(data.message || '設定讀取失敗');
                 renderSettingsStatus(data);
             } catch (err) {
@@ -892,7 +894,9 @@
                     body: JSON.stringify({ text }),
                 });
 
-                const data = await res.json();
+                const resText = await res.text();
+                let data;
+                try { data = JSON.parse(resText); } catch { data = { error: `伺服器回應錯誤 (${res.status})` }; }
 
                 if (!res.ok) {
                     showStatus('error', data.error || '解析失敗');
@@ -940,7 +944,9 @@
                     body: JSON.stringify({ text, date }),
                 });
 
-                const data = await res.json();
+                const resText = await res.text();
+                let data;
+                try { data = JSON.parse(resText); } catch { data = { status: 'error', message: `伺服器回應錯誤 (${res.status})` }; }
                 if (data.status === 'error' || data.status === 'busy') {
                     showStatus('error', data.message);
                     document.getElementById('btnExecute').disabled = false;
