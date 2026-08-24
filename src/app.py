@@ -197,8 +197,18 @@ def api_product_config():
 @app.route("/api/settings", methods=["POST"])
 def api_save_settings():
     """Save per-user settings without returning plaintext secrets."""
-    data = request.get_json(force=True) or {}
-    return jsonify(save_settings(data))
+    data = request.get_json(force=True, silent=True) or {}
+    try:
+        return jsonify(save_settings(data))
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"儲存設定時發生錯誤: {e}"}), 500
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    err_msg = str(getattr(error, "original_exception", error))
+    return jsonify({"status": "error", "message": f"伺服器內部錯誤: {err_msg}"}), 500
+
 
 
 @app.route("/api/parse", methods=["POST"])

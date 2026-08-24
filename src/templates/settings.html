@@ -430,7 +430,9 @@
         async function loadSettings() {
             try {
                 const res = await fetch('/api/settings');
-                const data = await res.json();
+                const text = await res.text();
+                let data;
+                try { data = JSON.parse(text); } catch { data = { message: `伺服器回應錯誤 (${res.status})` }; }
                 if (!res.ok) throw new Error(data.message || '設定讀取失敗');
 
                 document.getElementById('settingsBaseUrl').value = data.crm_base_url || '';
@@ -461,7 +463,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                 });
-                const data = await res.json();
+                const text = await res.text();
+                let data;
+                try { data = JSON.parse(text); } catch { data = { message: `伺服器回應錯誤 (${res.status})` }; }
                 if (!res.ok) throw new Error(data.message || '設定儲存失敗');
 
                 document.getElementById('settingsPassword').value = '';
