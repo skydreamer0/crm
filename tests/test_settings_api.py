@@ -28,6 +28,23 @@ def test_get_settings_returns_public_status_without_secrets(client):
     assert data["is_configured"] is False
     assert data["has_password"] is False
     assert data["crm_password"] == ""
+    assert data["business_unit"] == "H1"
+
+
+def test_hpk_mode_persists_and_parses_customer_only_markdown(client):
+    saved = client.post("/api/settings", json={"business_unit": "HPK"})
+    assert saved.status_code == 200
+    assert saved.get_json()["business_unit"] == "HPK"
+
+    response = client.post(
+        "/api/parse",
+        json={"text": "| 蔡良敏 |\n| --- |\n| 林怡芳 |", "business_unit": "HPK"},
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["business_unit"] == "HPK"
+    assert [entry["customer_name"] for entry in data["entries"]] == ["蔡良敏", "林怡芳"]
+    assert all(entry["selected_products"] == [] for entry in data["entries"])
 
 
 def test_post_settings_saves_and_redacts_secret_fields(client):

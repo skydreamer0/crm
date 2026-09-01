@@ -14,7 +14,7 @@ CRM 約會記錄自動化引擎 (create_appointments.py)
      - 填寫拜訪描述（從產品描述庫隨機選取）
      - 勾選完成事項「產品說明」
      - 新增產品介紹明細（產品搜尋 + 拜訪目的 + 拜訪內容）
-  5. 儲存並關閉，執行完畢後產出三態檢核報告 (完整/部分完成/失敗)
+  5. 儲存並關閉，執行完畢後產出檢核報告 (客戶完成/選填產品警告/失敗)
 
 呼叫方式:
   - CLI:    python src/create_appointments.py
@@ -27,6 +27,7 @@ import json
 import logging
 import os
 import random
+import re
 import sys
 from pathlib import Path
 
@@ -109,6 +110,176 @@ def _lookup_item_matches(text: str, title: str, keyvalues: str, expected: str) -
         str(part or "") for part in (text, title, keyvalues)
     ).casefold()
     return expected_value in haystack
+
+
+def _normalise_customer_lookup_text(value: str) -> str:
+    """Normalise CRM lookup display text for stable contextual matching."""
+    return re.sub(r"\s+", "", str(value or "")).casefold()
+
+
+def _hospital_lookup_tokens(hospital_name: str) -> list[str]:
+    """Return useful hospital tokens, longest first."""
+    value = _normalise_customer_lookup_text(hospital_name)
+    if not value:
+        return []
+
+    tokens = {value}
+    simplified = value
+    for suffix in ("醫院", "院區"):
+        simplified = simplified.replace(suffix, "")
+    if len(simplified) >= 2:
+        tokens.add(simplified)
+    return sorted(tokens, key=len, reverse=True)
+
+
+def _department_lookup_tokens(entry: VisitEntry) -> list[str]:
+    """Return department labels that may occur in a CRM customer title."""
+    tokens = {
+        _normalise_customer_lookup_text(entry.department_code),
+        _normalise_customer_lookup_text(entry.department_name_zh),
+    }
+    root = re.sub(r"[內外]?科$", "", _normalise_customer_lookup_text(entry.department_name_zh))
+    if len(root) >= 2:
+        tokens.add(root)
+    return sorted((token for token in tokens if token and token != "other"), key=len, reverse=True)
+
+
+def customer_candidate_score(candidate_text: str, entry: VisitEntry) -> int | None:
+    """
+    Score a CRM customer candidate using the visit identity.
+
+    Name is mandatory. When the input contains a hospital, that hospital is also
+    mandatory so an identically named customer from another hospital is never chosen.
+    Department is used as a tie-breaker because CRM labels are not always consistent.
+    """
+    haystack = _normalise_customer_lookup_text(candidate_text)
+    customer_name = _normalise_customer_lookup_text(entry.customer_name)
+    if not customer_name or customer_name not in haystack:
+        return None
+
+    score = 100
+    hospital_tokens = _hospital_lookup_tokens(entry.hospital_name)
+    if hospital_tokens:
+        if not any(token in haystack for token in hospital_tokens):
+            return None
+        score += 30
+
+    if any(token in haystack for token in _department_lookup_tokens(entry)):
+        score += 10
+    return score
+
+
+def choose_customer_candidate(candidate_texts: list[str], entry: VisitEntry) -> int:
+    """Return the unique best candidate index; reject missing or ambiguous matches."""
+    ranked = [
+        (score, index)
+        for index, text in enumerate(candidate_texts)
+        if (score := customer_candidate_score(text, entry)) is not None
+    ]
+    if not ranked:
+        context = f" / {entry.hospital_name}" if entry.hospital_name else ""
+        raise ValueError(f"找不到符合客戶「{entry.customer_name}{context}」的 CRM 候選")
+
+    best_score = max(score for score, _ in ranked)
+    best = [index for score, index in ranked if score == best_score]
+    if len(best) != 1:
+        # Dynamics 偶爾會回傳兩筆顯示內容完全相同的重複資料；
+        # 對使用者而言身分資訊一致，可安全選第一筆。
+        identities = {
+            _normalise_customer_lookup_text(
+                next(
+                    (line for line in candidate_texts[index].splitlines() if line.strip()),
+                    candidate_texts[index],
+                )
+            )
+            for index in best
+        }
+        if len(identities) == 1:
+            return best[0]
+        raise ValueError(f"客戶「{entry.customer_name}」有多筆相同候選，無法安全判定")
+    return best[0]
+
+
+async def _resolved_customer_text(frame, entry: VisitEntry) -> str | None:
+    """Return resolved CRM customer text only when it matches visit context."""
+    selector = _resolved_lookup_selector("new_abc")
+    for item in await frame.query_selector_all(selector):
+        text = await item.text_content() or ""
+        title = await item.get_attribute("title") or ""
+        candidate = "\n".join((text, title))
+        if customer_candidate_score(candidate, entry) is not None:
+            return title or text
+    return None
+
+
+async def select_and_verify_customer_lookup(popup_page, popup_frame, entry: VisitEntry) -> str:
+    """Select the unique CRM customer matching name and visit context, then verify it."""
+    if not entry.customer_name.strip():
+        raise ValueError("客戶姓名不可空白")
+
+    abc_field = await popup_frame.wait_for_selector(
+        SEL["appointment"]["customer_input"], timeout=10000
+    )
+    last_error: Exception | None = None
+
+    for attempt in range(3):
+        try:
+            await abc_field.click()
+            editor = await popup_frame.wait_for_selector(
+                SEL["appointment"]["customer_edit_input"], state="visible", timeout=5000
+            )
+            await editor.click()
+            await popup_page.keyboard.press("Control+A")
+            await popup_page.keyboard.press("Backspace")
+            await popup_page.keyboard.type(
+                entry.customer_name, delay=TIMING["type_delay"]
+            )
+            await popup_page.wait_for_timeout(1200 + attempt * 600)
+
+            # Dynamics 有時要 Enter 才送出 lookup 查詢；若直接 resolved，下面也會核對完整內容。
+            try:
+                await popup_frame.wait_for_selector(
+                    SEL["appointment"]["customer_menu"], state="visible", timeout=2500
+                )
+            except Exception:
+                await popup_page.keyboard.press("Enter")
+
+            resolved = await _resolved_customer_text(popup_frame, entry)
+            if not resolved:
+                await popup_frame.wait_for_selector(
+                    SEL["appointment"]["customer_menu"],
+                    state="visible",
+                    timeout=6000 + attempt * 2000,
+                )
+                items = popup_frame.locator(SEL["appointment"]["customer_menu_items"])
+                count = await items.count()
+                candidate_texts: list[str] = []
+                for index in range(count):
+                    item = items.nth(index)
+                    title = await item.get_attribute("title") or ""
+                    text = await item.text_content() or ""
+                    candidate_texts.append("\n".join((title, text)))
+
+                chosen_index = choose_customer_candidate(candidate_texts, entry)
+                await items.nth(chosen_index).click()
+
+            attempts = 16
+            for _ in range(attempts):
+                resolved = await _resolved_customer_text(popup_frame, entry)
+                if resolved:
+                    return resolved.strip()
+                await asyncio.sleep(0.5)
+            raise ValueError(f"客戶「{entry.customer_name}」選取後未通過 CRM 驗證")
+        except Exception as exc:
+            last_error = exc
+            logger.warning("  ⚠️ 客戶選取第 %d 次失敗: %s", attempt + 1, exc)
+            try:
+                await popup_page.keyboard.press("Escape")
+            except Exception:
+                pass
+            await popup_page.wait_for_timeout(500)
+
+    raise ValueError(f"客戶「{entry.customer_name}」無法正確選取: {last_error}")
 
 
 async def wait_for_resolved_lookup(frame, lookup_id: str, expected: str, timeout: int = 8000) -> bool:
@@ -514,41 +685,41 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None, st
     except Exception as e:
         logger.warning(f"  ⚠️ 拜訪描述填寫異常: {e}")
 
-    # === 4. 完成事項: 勾選「產品說明」===
-    logger.info("  勾選完成事項: 產品說明...")
-    checkbox_done = False
-    for cb_attempt in range(2):
-        try:
-            if cb_attempt > 0:
-                logger.info("  重試載入 checkbox iframe...")
-                await popup_page.wait_for_timeout(1500)
+    # === 4. 完成事項: 有產品時才勾選「產品說明」===
+    if entry and entry.matched_products:
+        logger.info("  勾選完成事項: 產品說明...")
+        checkbox_done = False
+        for cb_attempt in range(2):
+            try:
+                if cb_attempt > 0:
+                    logger.info("  重試載入 checkbox iframe...")
+                    await popup_page.wait_for_timeout(1500)
 
-            checkbox_iframe = await popup_frame.wait_for_selector(
-                SEL['appointment']['checkbox_iframe'], timeout=10000
-            )
-            checkbox_frame = await checkbox_iframe.content_frame()
-
-            if checkbox_frame:
-                # 等待 iframe 內容實際載入完成
-                await popup_page.wait_for_timeout(TIMING['iframe_ready'] + 500)
-                try:
-                    await checkbox_frame.wait_for_load_state("domcontentloaded", timeout=5000)
-                except Exception:
-                    pass
-
-                checkbox = await checkbox_frame.query_selector(
-                    SEL['appointment']['checkbox_product_intro']
+                checkbox_iframe = await popup_frame.wait_for_selector(
+                    SEL['appointment']['checkbox_iframe'], timeout=10000
                 )
-                if checkbox:
-                    is_checked = await checkbox.is_checked()
-                    if not is_checked:
-                        await checkbox.click()
-                        logger.info("  ✅ 已勾選「產品說明」")
-                    else:
-                        logger.info("  ✅ 「產品說明」已經勾選")
-                    checkbox_done = True
-                    break
-                else:
+                checkbox_frame = await checkbox_iframe.content_frame()
+
+                if checkbox_frame:
+                    # 等待 iframe 內容實際載入完成
+                    await popup_page.wait_for_timeout(TIMING['iframe_ready'] + 500)
+                    try:
+                        await checkbox_frame.wait_for_load_state("domcontentloaded", timeout=5000)
+                    except Exception:
+                        pass
+
+                    checkbox = await checkbox_frame.query_selector(
+                        SEL['appointment']['checkbox_product_intro']
+                    )
+                    if checkbox:
+                        is_checked = await checkbox.is_checked()
+                        if not is_checked:
+                            await checkbox.click()
+                            logger.info("  ✅ 已勾選「產品說明」")
+                        else:
+                            logger.info("  ✅ 「產品說明」已經勾選")
+                        checkbox_done = True
+                        break
                     checkbox = await checkbox_frame.query_selector(
                         SEL['appointment']['checkbox_product_intro_fallback']
                     )
@@ -557,71 +728,28 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None, st
                         logger.info("  ✅ 已勾選「產品說明」(備用選擇器)")
                         checkbox_done = True
                         break
-                    else:
-                        logger.warning(f"  ⚠️ 找不到產品說明 checkbox (嘗試 {cb_attempt+1})")
-            else:
-                logger.warning("  ⚠️ 無法進入 WebResource_checkbox iframe")
-        except Exception as e:
-            logger.warning(f"  ⚠️ 完成事項勾選異常 (嘗試 {cb_attempt+1}): {e}")
+                    logger.warning(f"  ⚠️ 找不到產品說明 checkbox (嘗試 {cb_attempt+1})")
+                else:
+                    logger.warning("  ⚠️ 無法進入 WebResource_checkbox iframe")
+            except Exception as e:
+                logger.warning(f"  ⚠️ 完成事項勾選異常 (嘗試 {cb_attempt+1}): {e}")
 
-    if not checkbox_done:
-        logger.warning("  ⚠️ 產品說明 checkbox 最終未勾選，繼續執行")
+        if not checkbox_done:
+            logger.warning("  ⚠️ 產品說明 checkbox 最終未勾選，繼續執行")
+    else:
+        logger.info("  ⏭️ 本批不填產品，跳過產品說明完成事項")
 
 
 
-    # === 4. 拜訪對象 (new_abc): 輸入客戶姓名 (移至最後填寫) ===
+    # === 4. 拜訪對象 (new_abc): 客戶是必要資料，必須精準選取並驗證 ===
     logger.info(f"  填寫拜訪對象: {customer_name}...")
-    try:
-        # 等待欄位出現並可點擊
-        abc_field = await popup_frame.wait_for_selector(
-            SEL['appointment']['customer_input'], timeout=10000
-        )
-        await abc_field.click()
-        await popup_page.wait_for_timeout(TIMING['after_click'] + 300)
-
-        if customer_name:
-            customer_selected = False
-            for attempt in range(3):
-                if attempt > 0:
-                    logger.warning(f"  ⚠️ 重新輸入拜訪對象 (第 {attempt} 次重試)...")
-                    await abc_field.click()
-                    await popup_page.keyboard.press("Control+A")
-                    await popup_page.keyboard.press("Backspace")
-                    await popup_page.wait_for_timeout(800)
-
-                # 直接貼上客戶姓名，提升速度
-                await popup_page.keyboard.insert_text(customer_name)
-                # 給更長的時間讓 CRM 的 onChange 或 keyup 事件去拉取資料
-                await popup_page.wait_for_timeout(1500 + attempt * 1000)
-
-                logger.info("  → 按下 Enter (觸發搜尋或選取第一個)...")
-                await popup_page.keyboard.press("Enter")
-
-                # 嘗試等待下拉選單出現 (增加容錯能力)
-                try:
-                    await popup_frame.wait_for_selector("ul#new_abc_i_IMenu", state="visible", timeout=6000 + attempt * 2000)
-                    logger.info("  ✅ 客戶下拉選單出現")
-                except Exception:
-                    pass
-
-                await popup_page.wait_for_timeout(800 + attempt * 500)
-                logger.info("  → 按下 Enter 確認選取...")
-                await popup_page.keyboard.press("Enter")
-                
-                # 給予時間讓 CRM 確認選取
-                await popup_page.wait_for_timeout(1500)
-                
-                # Check if it was successfully resolved
-                customer_selected = True
-                break
-                
-            logger.info(f"  ✅ 拜訪對象已帶入: {customer_name}")
-        else:
-            await popup_page.keyboard.press("Tab")
-            await popup_page.wait_for_timeout(TIMING['key_press'])
-            logger.info("  ✅ 拜訪對象已帶入 (模板)")
-    except Exception as e:
-        logger.warning(f"  ⚠️ 拜訪對象填寫異常: {e}")
+    resolved_customer = await select_and_verify_customer_lookup(
+        popup_page, popup_frame, entry
+    )
+    if state is not None:
+        state["customer_verified"] = True
+        state["resolved_customer"] = resolved_customer
+    logger.info("  ✅ 拜訪對象已驗證: %s", resolved_customer)
 
     # === 5. 儲存約會記錄 ===
     logger.info("  儲存約會記錄...")
@@ -921,6 +1049,13 @@ async def create_single_appointment(page, context, period: str, index: int, entr
         state: 可選的進度標記 dict，傳遞給 fill_appointment 追蹤儲存狀態
     """
     customer_label = f" — {entry.customer_name}" if entry else ""
+    if entry is None:
+        raise ValueError("建立約會前必須提供客戶資料")
+    appointment_state = state if state is not None else {
+        "appointment_saved": False,
+        "customer_verified": False,
+        "resolved_customer": None,
+    }
     logger.info(f"{'='*50}")
     logger.info(f"建立第 {index} 筆約會記錄 ({period}{customer_label})")
     logger.info(f"{'='*50}")
@@ -962,14 +1097,17 @@ async def create_single_appointment(page, context, period: str, index: int, entr
     logger.info(f"✅ Popup 開啟: {popup_page.url}")
 
     # 填寫約會表單 (原始可運作邏輯，不包含產品)
-    await fill_appointment(popup_page, period, entry=entry, state=state)
+    await fill_appointment(popup_page, period, entry=entry, state=appointment_state)
 
     # 產品填寫結果 (預設: 無產品可填 → complete)
     fill_result = {
+        "customer_verified": bool(appointment_state.get("customer_verified")),
+        "resolved_customer": appointment_state.get("resolved_customer"),
         "products_planned": [],
         "product_results": [],
         "subgrid_count": None,
         "status": "complete",
+        "product_status": "complete",
         "verified": False,
         "screenshot": None,
     }
@@ -1011,7 +1149,9 @@ async def create_single_appointment(page, context, period: str, index: int, entr
     status, verified = classify_fill_status(
         planned_count, ok_count, fill_result["subgrid_count"]
     )
-    fill_result["status"] = status
+    # 約會是否完成以客戶資料為準；產品是選填資訊，只保留獨立警告狀態。
+    fill_result["status"] = "complete"
+    fill_result["product_status"] = status
     fill_result["verified"] = verified
 
     if status == "partial":
@@ -1019,7 +1159,7 @@ async def create_single_appointment(page, context, period: str, index: int, entr
         detail = f"缺漏產品: {missing}" if missing else (
             f"CRM 顯示 {fill_result['subgrid_count']}/{planned_count} 筆"
         )
-        logger.warning(f"  🟡 產品填寫不完整 — {detail}")
+        logger.warning(f"  🟡 客戶資料已完成；選填產品不完整 — {detail}")
 
         # 截圖佐證，方便事後補填時對照
         try:
@@ -1160,7 +1300,11 @@ async def run_automation(
                 if browser_dead:
                     failed.append((entry, "瀏覽器已關閉，跳過", False))
                     continue
-                entry_state = {"appointment_saved": False}
+                entry_state = {
+                    "appointment_saved": False,
+                    "customer_verified": False,
+                    "resolved_customer": None,
+                }
                 try:
                     period = "上午" if idx <= midpoint else "下午"
                     _report("appointment", idx, f"{entry.customer_name} ({period})")
@@ -1181,10 +1325,14 @@ async def run_automation(
                         browser_dead = True
 
             # =================================================================
-            #  Step 4: 最終檢核報告 — 三態: 完整 / 部分完成 / 失敗
+            #  Step 4: 最終檢核報告 — 客戶完成 / 選填產品警告 / 失敗
             # =================================================================
             complete = [(e, fr) for e, fr in succeeded if fr.get("status") == "complete"]
-            partial = [(e, fr) for e, fr in succeeded if fr.get("status") == "partial"]
+            # 客戶已正確建立即算完成；產品缺漏改列為選填警告，不再算部分完成。
+            partial: list[tuple[VisitEntry, dict]] = []
+            product_warnings = [
+                (e, fr) for e, fr in succeeded if fr.get("product_status") == "partial"
+            ]
 
             def _partial_detail(e: VisitEntry, fr: dict) -> dict:
                 planned = fr.get("products_planned", [])
@@ -1205,19 +1353,20 @@ async def run_automation(
                 }
 
             partial_details = [_partial_detail(e, fr) for e, fr in partial]
+            product_warning_details = [_partial_detail(e, fr) for e, fr in product_warnings]
 
             logger.info("")
             logger.info("=" * 60)
             logger.info("📋 最終檢核報告")
             logger.info("=" * 60)
             logger.info(f"  預計處理: {total} 筆")
-            logger.info(f"  ✅ 完整:  {len(complete)} 筆")
-            logger.info(f"  🟡 部分完成:  {len(partial)} 筆")
+            logger.info(f"  ✅ 客戶完成:  {len(complete)} 筆")
+            logger.info(f"  🟡 選填產品警告:  {len(product_warnings)} 筆")
             logger.info(f"  ❌ 失敗:  {len(failed)} 筆")
 
             if complete:
                 logger.info("")
-                logger.info("  ── 完整名單 ──")
+                logger.info("  ── 客戶資料完成名單 ──")
                 for e, _ in complete:
                     logger.info(f"    ✅ {e.customer_name} ({e.department_code})")
 
@@ -1229,6 +1378,13 @@ async def run_automation(
                     logger.info(f"    🟡 {d['name']} ({d['dept']}) — {reason}")
                     if d["screenshot"]:
                         logger.info(f"       📸 {d['screenshot']}")
+
+            if product_warning_details:
+                logger.info("")
+                logger.info("  ── 🟡 選填產品警告 (客戶資料已完成) ──")
+                for d in product_warning_details:
+                    reason = f"缺漏: {', '.join(d['missing'])}" if d["missing"] else d["note"]
+                    logger.info(f"    🟡 {d['name']} ({d['dept']}) — {reason}")
 
             if failed:
                 logger.info("")
@@ -1245,6 +1401,7 @@ async def run_automation(
                 {"name": e.customer_name, "dept": e.department_code} for e, _ in complete
             ]
             run_history["partial"] = partial_details
+            run_history["product_warnings"] = product_warning_details
             run_history["failed"] = [
                 {"name": e.customer_name, "dept": e.department_code, "error": err, "orphan": orphan}
                 for e, err, orphan in failed
@@ -1254,6 +1411,7 @@ async def run_automation(
                 "total": total,
                 "complete": run_history["completed"],
                 "partial": partial_details,
+                "product_warnings": product_warning_details,
                 "failed": run_history["failed"],
                 "cancelled": was_cancelled,
             }

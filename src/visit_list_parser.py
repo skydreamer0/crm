@@ -216,25 +216,37 @@ def parse_single_entry(line: str, extra_hospitals: Optional[set[str]] = None) ->
     hospital_name: str = ""
     dept_info: Optional[dict] = None
 
+    # 完整名單格式固定為「醫院/科別/客戶/等級」。
+    # 新區域（例如 HPK）的醫院可能尚未存在於內建清單；只要第二段能辨識為科別，
+    # 就直接保留第一段醫院與第三段客戶，避免把新醫院誤判成客戶姓名。
+    structured_entry = len(tokens) >= 3 and _identify_department(tokens[1])
+    if structured_entry:
+        hospital_name = tokens[0]
+        dept_info = _identify_department(tokens[1])
+        customer_name = tokens[2]
+
     # Pass 0: identify hospital (longest matching token wins, e.g. 耕莘安康 > 耕莘)
-    for token in tokens:
-        normed = _normalise_token(token)
-        if normed in hospitals and len(normed) > len(hospital_name):
-            hospital_name = normed
+    if not structured_entry:
+        for token in tokens:
+            normed = _normalise_token(token)
+            if normed in hospitals and len(normed) > len(hospital_name):
+                hospital_name = normed
 
     # Pass 1: identify department
-    for token in tokens:
-        found = _identify_department(token)
-        if found:
-            dept_info = found
-            break
+    if not dept_info:
+        for token in tokens:
+            found = _identify_department(token)
+            if found:
+                dept_info = found
+                break
 
     # Pass 2: identify customer name
     #   Priority: first CJK 2-4 char token that isn't hospital/dept
-    for token in tokens:
-        if _is_chinese_name(token, hospitals):
-            customer_name = token
-            break
+    if not customer_name:
+        for token in tokens:
+            if _is_chinese_name(token, hospitals):
+                customer_name = token
+                break
 
     # Fallback: if no CJK name found, pick a non-dept / non-hospital /
     # non-grade token
@@ -300,6 +312,64 @@ def parse_visit_list(text: str, extra_hospitals: Optional[set[str]] = None) -> l
                 entry.matched_products,
             )
     logger.info("共解析 %d 筆待訪名單", len(entries))
+    return entries
+
+
+def parse_hpk_customer_list(text: str) -> list[VisitEntry]:
+    """Parse an HPK customer-only list, including pasted Markdown table rows."""
+    entries: list[VisitEntry] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        if "|" in line:
+            cells = [cell.strip() for cell in line.strip("|").split("|") if cell.strip()]
+            if not cells:
+                continue
+            line = cells[0]
+
+        if re.fullmatch(r":?-{3,}:?", line) or line in {"客戶", "姓名", "客戶姓名"}:
+            continue
+
+        line = re.sub(r"^(?:[-*•]|\d+[.)、])\s*", "", line).strip()
+        if not line:
+            continue
+
+        # HPK 也接受完整格式；有院所/科別時可協助同名客戶判斷。
+        if re.search(r"[/／、\t]", line):
+            parts = [
+                _normalise_token(part)
+                for part in re.split(r"[/／、\t]+", line)
+                if _normalise_token(part)
+            ]
+            if len(parts) >= 3:
+                department = _identify_department(parts[1])
+                entry = VisitEntry(
+                    customer_name=parts[2],
+                    hospital_name=parts[0],
+                    department_code=department["code"] if department else "OTHER",
+                    department_name_zh=department["name_zh"] if department else parts[1],
+                    matched_products=[],
+                    raw_line=line,
+                )
+            else:
+                entry = parse_single_entry(line)
+                if not entry:
+                    continue
+                entry.matched_products = []
+                entry.products_locked = False
+        else:
+            entry = VisitEntry(
+                customer_name=line,
+                department_code="OTHER",
+                department_name_zh="其他",
+                matched_products=[],
+                raw_line=line,
+            )
+        entries.append(entry)
+
+    logger.info("HPK 共解析 %d 筆客戶名單", len(entries))
     return entries
 
 

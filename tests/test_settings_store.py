@@ -29,6 +29,7 @@ def test_save_settings_redacts_secrets_and_reports_configured():
             "crm_username": "alice",
             "crm_password": "super-secret",
             "headless": True,
+            "business_unit": "HPK",
         }
     )
 
@@ -44,6 +45,7 @@ def test_save_settings_redacts_secrets_and_reports_configured():
     assert effective["crm_username"] == "alice"
     assert effective["crm_password"] == "super-secret"
     assert effective["headless"] is True
+    assert effective["business_unit"] == "HPK"
 
     public_after_reload = get_public_settings()
     assert public_after_reload["crm_password"] == ""

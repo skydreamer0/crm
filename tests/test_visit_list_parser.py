@@ -13,11 +13,30 @@ from visit_list_parser import (
     collect_hospital_aliases,
     get_random_description,
     parse_single_entry,
+    parse_hpk_customer_list,
     parse_visit_list,
     resolve_crm_product_id,
     select_products,
     VisitEntry,
 )
+
+
+class TestHpkCustomerList:
+
+    def test_plain_names_skip_products(self):
+        entries = parse_hpk_customer_list("蔡良敏\n林怡芳")
+        assert [entry.customer_name for entry in entries] == ["蔡良敏", "林怡芳"]
+        assert all(entry.matched_products == [] for entry in entries)
+
+    def test_markdown_tables_ignore_separators(self):
+        entries = parse_hpk_customer_list("| 潘潔慧 |\n| --- |\n| 連小茵 |")
+        assert [entry.customer_name for entry in entries] == ["潘潔慧", "連小茵"]
+
+    def test_full_context_format_keeps_identity_but_skips_products(self):
+        entry = parse_hpk_customer_list("郭綜合台南/醫務部/郭正彥")[0]
+        assert entry.customer_name == "郭正彥"
+        assert entry.hospital_name == "郭綜合台南"
+        assert entry.matched_products == []
 
 
 # ── Standard format ──────────────────────────────────────────────────────────
@@ -221,9 +240,10 @@ class TestHospitalExtraction:
         e = parse_single_entry("耕莘安康/URO/彭崇信/B")
         assert e.hospital_name == "耕莘安康"
 
-    def test_unknown_hospital_defaults_empty(self):
+    def test_structured_format_preserves_unknown_hospital(self):
         e = parse_single_entry("光田/URO/王小明/A")
-        assert e.hospital_name == ""
+        assert e.hospital_name == "光田"
+        assert e.customer_name == "王小明"
 
     def test_extra_hospitals_prevent_name_misparse(self):
         # 使用者自訂醫院（不在內建清單）不應被誤判成客戶姓名

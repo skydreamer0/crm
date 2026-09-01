@@ -256,6 +256,56 @@
             font-size: 11px;
         }
 
+        .unit-switch {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 24px;
+            padding: 6px;
+            background: #10131b;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .unit-option {
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 14px 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .unit-option strong { display: block; color: var(--text-primary); font-size: 14px; }
+        .unit-option span { display: block; margin-top: 4px; font-size: 11px; line-height: 1.45; }
+        .unit-option.active {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+            box-shadow: inset 3px 0 0 var(--accent), 0 8px 22px rgba(0, 0, 0, .2);
+        }
+        .unit-option[data-unit="HPK"].active {
+            background: rgba(52, 211, 153, .1);
+            border-color: var(--success);
+            box-shadow: inset 3px 0 0 var(--success), 0 8px 22px rgba(0, 0, 0, .2);
+        }
+
+        .mode-notice {
+            margin: -8px 0 22px;
+            padding: 11px 14px;
+            border-left: 3px solid var(--accent);
+            background: var(--accent-soft);
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        body[data-unit="HPK"] .mode-notice {
+            border-color: var(--success);
+            background: var(--success-soft);
+        }
+
         /* ─── Buttons ─────────────────────────────────────────────── */
         .actions {
             display: flex;
@@ -711,6 +761,8 @@
                 flex-direction: column;
             }
 
+            .unit-switch { grid-template-columns: 1fr; }
+
             .product-grid {
                 margin-left: 0;
                 grid-template-columns: 1fr;
@@ -743,7 +795,7 @@
                 <div class="header__icon">📋</div>
                 <h1 class="header__title">CRM 操作介面</h1>
             </div>
-            <p class="header__subtitle">貼入待訪名單，自動解析科別與匹配產品</p>
+            <p class="header__subtitle" id="headerSubtitle">貼入待訪名單，自動解析科別與匹配產品</p>
         </header>
 
         <!-- Input Section -->
@@ -752,6 +804,17 @@
                 <span class="section-label__dot"></span>
                 執行設定
             </div>
+            <div class="unit-switch" role="group" aria-label="業務單位">
+                <button class="unit-option active" type="button" data-unit="H1" onclick="switchBusinessUnit('H1')">
+                    <strong>H1 · 一般醫院業務</strong>
+                    <span>醫院、科別與產品矩陣完整流程</span>
+                </button>
+                <button class="unit-option" type="button" data-unit="HPK" onclick="switchBusinessUnit('HPK')">
+                    <strong>HPK · 客戶模式</strong>
+                    <span>只建立客戶約會，不填任何產品</span>
+                </button>
+            </div>
+            <div class="mode-notice" id="modeNotice">H1 模式會依醫院與科別套用產品規則。</div>
             <div style="margin-bottom: 24px;">
                 <label style="font-size: 13px; color: var(--text-secondary); margin-right: 12px;">欲填寫日期:</label>
                 <input type="date" id="runDate" style="background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text-primary); font-family: inherit; font-size: 14px; outline: none; transition: var(--transition);">
@@ -766,7 +829,7 @@
                     placeholder="每行一筆，格式: 醫院/科別/姓名/等級&#10;&#10;範例:&#10;慈濟/URO/吳書雨/B&#10;耕莘/OBS/王小明/A&#10;新光/泌尿科/李大華/C"
                     spellcheck="false"></textarea>
             </div>
-            <p class="example-hint">
+            <p class="example-hint" id="inputHint">
                 支援格式: <code>醫院/科別/姓名/等級</code>，科別可用中文或英文代碼 (URO, OBS, PED, FM)
             </p>
         </section>
@@ -842,6 +905,7 @@
         /* ─── State ───────────────────────────────────────────────── */
         let parsedEntries = [];
         let settingsConfigured = false;
+        let activeBusinessUnit = 'H1';
 
         /* ─── API Calls ───────────────────────────────────────────── */
         document.addEventListener('DOMContentLoaded', () => {
@@ -856,11 +920,52 @@
                 const res = await fetch('/api/settings');
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message || '設定讀取失敗');
+                applyBusinessUnit(data.business_unit || 'H1');
                 renderSettingsStatus(data);
             } catch (err) {
                 settingsConfigured = false;
                 renderSettingsStatus({ is_configured: false, missing_fields: ['settings'] });
                 showToast(`設定讀取失敗: ${err.message}`, 'warning');
+            }
+        }
+
+        function applyBusinessUnit(unit) {
+            activeBusinessUnit = unit === 'HPK' ? 'HPK' : 'H1';
+            document.body.dataset.unit = activeBusinessUnit;
+            document.querySelectorAll('.unit-option').forEach(button => {
+                button.classList.toggle('active', button.dataset.unit === activeBusinessUnit);
+            });
+
+            const input = document.getElementById('visitInput');
+            const hpk = activeBusinessUnit === 'HPK';
+            document.getElementById('headerSubtitle').textContent = hpk
+                ? '貼入客戶姓名，建立 HPK 客戶約會'
+                : '貼入待訪名單，自動解析科別與匹配產品';
+            document.getElementById('modeNotice').textContent = hpk
+                ? 'HPK 模式只驗證並建立客戶約會；產品描述、產品說明與產品明細全部跳過。'
+                : 'H1 模式會依醫院與科別套用產品規則。';
+            document.getElementById('inputHint').innerHTML = hpk
+                ? '支援每行一位姓名，也可直接貼上 <code>Markdown 表格</code>；同名時可使用 <code>醫院/科別/姓名</code>。'
+                : '支援格式: <code>醫院/科別/姓名/等級</code>，科別可用中文或英文代碼 (URO, OBS, PED, FM)';
+            input.placeholder = hpk
+                ? '每行一位客戶姓名\n\n範例：\n蔡良敏\n林怡芳\n潘潔慧\n\n也可直接貼上 Markdown 表格'
+                : '每行一筆，格式: 醫院/科別/姓名/等級\n\n範例:\n慈濟/URO/吳書雨/B\n耕莘/OBS/王小明/A\n新光/泌尿科/李大華/C';
+        }
+
+        async function switchBusinessUnit(unit) {
+            if (unit === activeBusinessUnit) return;
+            applyBusinessUnit(unit);
+            doClear();
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ business_unit: activeBusinessUnit }),
+                });
+                if (!res.ok) throw new Error('模式儲存失敗');
+                showToast(`已切換為 ${activeBusinessUnit} 模式`);
+            } catch (err) {
+                showToast(err.message, 'warning');
             }
         }
 
@@ -889,7 +994,7 @@
                 const res = await fetch('/api/parse', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text }),
+                    body: JSON.stringify({ text, business_unit: activeBusinessUnit }),
                 });
 
                 const data = await res.json();
@@ -937,7 +1042,7 @@
                 const res = await fetch('/api/execute', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, date }),
+                    body: JSON.stringify({ text, date, business_unit: activeBusinessUnit }),
                 });
 
                 const data = await res.json();
@@ -1063,6 +1168,7 @@
             if (!summary) return;
             const card = document.getElementById('fillReportCard');
             const partial = summary.partial || [];
+            const productWarnings = summary.product_warnings || partial;
             const failed = summary.failed || [];
             const complete = summary.complete || [];
 
@@ -1074,11 +1180,11 @@
                     </div>
                     <div class="fill-summary__stat ok">
                         <div class="fill-summary__num">${complete.length}</div>
-                        <div class="fill-summary__label">✅ 完整</div>
+                        <div class="fill-summary__label">✅ 客戶完成</div>
                     </div>
                     <div class="fill-summary__stat warn">
-                        <div class="fill-summary__num">${partial.length}</div>
-                        <div class="fill-summary__label">🟡 部分完成</div>
+                        <div class="fill-summary__num">${productWarnings.length}</div>
+                        <div class="fill-summary__label">🟡 選填產品警告</div>
                     </div>
                     <div class="fill-summary__stat bad">
                         <div class="fill-summary__num">${failed.length}</div>
@@ -1086,8 +1192,8 @@
                     </div>
                 </div>`;
 
-            if (partial.length) {
-                const rows = partial.map(p => {
+            if (productWarnings.length) {
+                const rows = productWarnings.map(p => {
                     const reason = p.missing && p.missing.length
                         ? `缺漏: <span class="missing-code">${escHtml(p.missing.join(', '))}</span>`
                         : escHtml(p.note || '產品數量不足');
@@ -1101,7 +1207,7 @@
                 }).join('');
                 html += `
                 <table class="fill-table">
-                    <caption class="warn">🟡 需補填產品名單（約會已建立，請至 CRM 補上缺漏產品）</caption>
+                    <caption class="warn">🟡 選填產品未完整（客戶資料與約會已建立，不影響完成）</caption>
                     <thead><tr><th>姓名</th><th>科別</th><th>預計產品</th><th>缺漏 / 備註</th><th>截圖</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>`;
@@ -1124,8 +1230,8 @@
                 </table>`;
             }
 
-            if (!partial.length && !failed.length) {
-                html += `<div class="fill-report-allgood">🎉 全部 ${complete.length} 筆完整填寫，不需回 CRM 巡查。</div>`;
+            if (!productWarnings.length && !failed.length) {
+                html += `<div class="fill-report-allgood">🎉 全部 ${complete.length} 筆客戶資料已正確填寫。</div>`;
             }
 
             card.innerHTML = html;
@@ -1170,14 +1276,21 @@
             </div>
         `).join('');
 
+                const contextLabel = activeBusinessUnit === 'HPK'
+                    ? (entry.hospital_name || 'HPK 客戶')
+                    : (entry.department_name_zh || entry.department_code);
+                const productSection = activeBusinessUnit === 'HPK'
+                    ? '<div class="result-card__raw">客戶模式 · 不建立產品資料</div>'
+                    : `<div class="product-grid">${productsHtml || '<span style="color:var(--text-muted);font-size:13px;">無匹配產品</span>'}</div>`;
+
                 card.innerHTML = `
             <div class="result-card__header">
                 <div class="result-card__index">${i + 1}</div>
                 <span class="result-card__name">${escHtml(entry.customer_name)}</span>
-                <span class="result-card__dept">${escHtml(entry.department_name_zh || entry.department_code)}</span>
+                <span class="result-card__dept">${escHtml(contextLabel)}</span>
             </div>
             <div class="result-card__raw">原始: ${escHtml(entry.raw_line)}</div>
-            <div class="product-grid">${productsHtml || '<span style="color:var(--text-muted);font-size:13px;">無匹配產品</span>'}</div>
+            ${productSection}
         `;
 
                 container.appendChild(card);

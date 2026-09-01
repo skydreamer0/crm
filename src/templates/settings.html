@@ -205,6 +205,18 @@
             transition: var(--transition);
         }
 
+        .settings-field select {
+            width: 100%;
+            height: 42px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font: inherit;
+            outline: none;
+        }
+
         .settings-field input:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-soft);
@@ -373,6 +385,13 @@
                     <input type="password" id="settingsPassword" autocomplete="current-password" placeholder="留空保留既有密碼">
                     <span class="field-hint" id="passwordHint"></span>
                 </div>
+                <div class="settings-field settings-field--wide">
+                    <label for="settingsBusinessUnit">業務單位模式</label>
+                    <select id="settingsBusinessUnit">
+                        <option value="H1">H1 — 一般醫院業務（包含產品矩陣）</option>
+                        <option value="HPK">HPK — 客戶模式（完全不填產品）</option>
+                    </select>
+                </div>
                 <label class="toggle-row" for="settingsHeadless">
                     <input type="checkbox" id="settingsHeadless">
                     <span>HEADLESS（背景執行，不顯示瀏覽器視窗）</span>
@@ -389,7 +408,7 @@
             <div class="settings-path" id="settingsPath"></div>
         </section>
 
-        <section class="settings-section">
+        <section class="settings-section" id="productRulesSection">
             <div class="settings-header">
                 <div class="section-label">
                     <span class="section-label__dot"></span>
@@ -418,6 +437,8 @@
                 document.getElementById('settingsUsername').value = data.crm_username || '';
                 document.getElementById('settingsPassword').value = '';
                 document.getElementById('settingsHeadless').checked = !!data.headless;
+                document.getElementById('settingsBusinessUnit').value = data.business_unit || 'H1';
+                renderBusinessUnit(data.business_unit || 'H1');
                 renderStatus(data);
             } catch (err) {
                 renderStatus({ is_configured: false });
@@ -431,6 +452,7 @@
                 crm_username: document.getElementById('settingsUsername').value.trim(),
                 crm_password: document.getElementById('settingsPassword').value,
                 headless: document.getElementById('settingsHeadless').checked,
+                business_unit: document.getElementById('settingsBusinessUnit').value,
             };
 
             try {
@@ -443,12 +465,25 @@
                 if (!res.ok) throw new Error(data.message || '設定儲存失敗');
 
                 document.getElementById('settingsPassword').value = '';
+                renderBusinessUnit(data.business_unit || payload.business_unit);
                 renderStatus(data);
                 showToast('✅ 設定已儲存');
             } catch (err) {
                 showToast(`設定儲存失敗: ${err.message}`, 'warning');
             }
         }
+
+        function renderBusinessUnit(unit) {
+            const productSection = document.getElementById('productRulesSection');
+            productSection.style.opacity = unit === 'HPK' ? '0.45' : '1';
+            productSection.querySelector('.section-copy').textContent = unit === 'HPK'
+                ? 'HPK 客戶模式不使用產品矩陣；切回 H1 時原有規則仍會保留。'
+                : '設定每間醫院、每個科別要建立的 CRM 產品 SKU，包含 Eligard 不同月份劑量。';
+        }
+
+        document.getElementById('settingsBusinessUnit').addEventListener('change', event => {
+            renderBusinessUnit(event.target.value);
+        });
 
         function renderStatus(data) {
             const status = document.getElementById('settingsStatus');

@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 APP_DIR_NAME = "crm-automation"
 SETTINGS_FILE_NAME = "settings.json"
 DEFAULT_CRM_BASE_URL = "https://crm.synmosa.com.tw/SYNCRM/main.aspx#187829805/"
+DEFAULT_BUSINESS_UNIT = "H1"
+BUSINESS_UNITS = {"H1", "HPK"}
 
 REQUIRED_FIELDS = ("crm_base_url", "crm_username", "crm_password")
 SECRET_FIELDS = ("crm_password",)
@@ -50,6 +52,7 @@ def load_saved_settings() -> dict[str, Any]:
         "crm_username": _as_text(data.get("crm_username")),
         "crm_password": _decode_secret(data.get("crm_password")),
         "headless": _as_bool(data.get("headless"), default=False),
+        "business_unit": _sanitize_business_unit(data.get("business_unit")),
         "hospital_product_rules": _sanitize_hospital_product_rules(
             data.get("hospital_product_rules")
         ),
@@ -76,6 +79,11 @@ def save_settings(payload: dict[str, Any]) -> dict[str, Any]:
         "headless": _as_bool(
             payload.get("headless") if "headless" in payload else existing_raw.get("headless"),
             default=False,
+        ),
+        "business_unit": _sanitize_business_unit(
+            payload.get("business_unit")
+            if "business_unit" in payload
+            else existing_raw.get("business_unit")
         ),
     }
 
@@ -116,6 +124,7 @@ def get_effective_settings() -> dict[str, Any]:
         "crm_username": saved["crm_username"] or os.getenv("CRM_USERNAME", ""),
         "crm_password": saved["crm_password"] or os.getenv("CRM_PASSWORD", ""),
         "headless": saved["headless"] if "headless" in saved else _env_headless(),
+        "business_unit": saved["business_unit"],
         "hospital_product_rules": saved["hospital_product_rules"],
     }
 
@@ -131,6 +140,7 @@ def get_public_settings() -> dict[str, Any]:
         "crm_username": saved["crm_username"] or _as_text(os.getenv("CRM_USERNAME")),
         "crm_password": "",
         "headless": effective["headless"],
+        "business_unit": effective["business_unit"],
         "hospital_product_rules": saved["hospital_product_rules"],
         "has_password": bool(effective["crm_password"]),
         "is_configured": not missing,
@@ -151,8 +161,14 @@ def _empty_settings() -> dict[str, Any]:
         "crm_username": "",
         "crm_password": "",
         "headless": False,
+        "business_unit": DEFAULT_BUSINESS_UNIT,
         "hospital_product_rules": {},
     }
+
+
+def _sanitize_business_unit(value: Any) -> str:
+    unit = _as_text(value).upper()
+    return unit if unit in BUSINESS_UNITS else DEFAULT_BUSINESS_UNIT
 
 
 def _sanitize_hospital_product_rules(value: Any) -> dict[str, Any]:

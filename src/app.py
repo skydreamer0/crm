@@ -39,6 +39,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from visit_list_parser import (
     parse_visit_list,
+    parse_hpk_customer_list,
     select_products,
     get_product_info,
     get_random_description,
@@ -117,6 +118,21 @@ def _validate_visit_text(data) -> tuple[str, str | None]:
     if not raw_text.strip():
         return "", "請輸入待訪名單"
     return raw_text, None
+
+
+def _requested_business_unit(data: dict, settings: dict) -> str:
+    unit = str(data.get("business_unit") or settings.get("business_unit") or "H1").upper()
+    return unit if unit in {"H1", "HPK"} else "H1"
+
+
+def _parse_entries_for_unit(raw_text: str, business_unit: str, hospital_rules: dict) -> list[VisitEntry]:
+    if business_unit == "HPK":
+        return parse_hpk_customer_list(raw_text)
+    entries = parse_visit_list(
+        raw_text, extra_hospitals=collect_hospital_aliases(hospital_rules)
+    )
+    apply_hospital_product_rules(entries, hospital_rules)
+    return entries
 
 
 # ---------------------------------------------------------------------------
@@ -202,15 +218,13 @@ def api_parse():
         return jsonify({"entries": [], "error": text_error}), 400
 
     settings = get_effective_settings()
+    business_unit = _requested_business_unit(data, settings)
     hospital_rules = settings.get("hospital_product_rules") or {}
-    entries = parse_visit_list(
-        raw_text, extra_hospitals=collect_hospital_aliases(hospital_rules)
-    )
-    apply_hospital_product_rules(entries, hospital_rules)
+    entries = _parse_entries_for_unit(raw_text, business_unit, hospital_rules)
     results = []
 
     for entry in entries:
-        selected = select_products(entry, count=2)
+        selected = [] if business_unit == "HPK" else select_products(entry, count=2)
         products_detail = []
         for code in selected:
             info = get_product_info(code)
@@ -237,7 +251,7 @@ def api_parse():
             }
         )
 
-    return jsonify({"entries": results, "count": len(results)})
+    return jsonify({"entries": results, "count": len(results), "business_unit": business_unit})
 
 
 @app.route("/api/execute", methods=["POST"])
@@ -268,6 +282,7 @@ def api_execute():
                 return jsonify({"status": "error", "message": "日期格式錯誤，請使用 YYYY-MM-DD"}), 400
 
     settings = get_effective_settings()
+    business_unit = _requested_business_unit(data, settings)
     missing_fields = validate_effective_settings(settings)
     if missing_fields:
         return jsonify({
@@ -279,12 +294,9 @@ def api_execute():
 
     # Parse entries (套用使用者的醫院鎖定規則)
     hospital_rules = settings.get("hospital_product_rules") or {}
-    entries = parse_visit_list(
-        raw_text, extra_hospitals=collect_hospital_aliases(hospital_rules)
-    )
+    entries = _parse_entries_for_unit(raw_text, business_unit, hospital_rules)
     if not entries:
         return jsonify({"status": "error", "message": "名單解析失敗，請檢查格式"}), 400
-    apply_hospital_product_rules(entries, hospital_rules)
 
     # 原子性檢查 busy 並佔用執行權，避免兩個請求同時通過檢查
     with _state_lock:
@@ -326,7 +338,7 @@ def api_execute():
 
     return jsonify({
         "status": "started",
-        "message": f"已開始自動化處理 {len(entries)} 筆名單，請透過 /api/status 查詢進度。",
+        "message": f"已以 {business_unit} 模式開始處理 {len(entries)} 筆名單。",
     })
 
 

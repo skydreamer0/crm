@@ -26,6 +26,9 @@ crm:
 
     # 拜訪對象
     customer_input: "div#new_abc"
+    customer_edit_input: "input#new_abc_ledit"
+    customer_menu: "ul#new_abc_i_IMenu"
+    customer_menu_items: "ul#new_abc_i_IMenu li:not(.ms-crm-IL-MenuItem-Lookupmore) a.ms-crm-IL-MenuItem-Anchor"
 
     # 實際拜訪時段
     period_div: "div#new_actualvisitperiod"
