@@ -49,6 +49,10 @@ from visit_list_parser import (
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# 跨平台快速鍵定義 (macOS 使用 Meta/Command，Windows/Linux 使用 Control)
+SELECT_ALL_KEY = "Meta+a" if sys.platform == "darwin" else "Control+a"
+SAVE_KEY = "Meta+s" if sys.platform == "darwin" else "Control+s"
+
 # === 載入外部選擇器 ===
 def _resource_path(relative_path: str) -> Path:
     """Resolve data files both from source and from a PyInstaller bundle."""
@@ -229,7 +233,7 @@ async def select_and_verify_customer_lookup(popup_page, popup_frame, entry: Visi
                 SEL["appointment"]["customer_edit_input"], state="visible", timeout=5000
             )
             await editor.click()
-            await popup_page.keyboard.press("Control+A")
+            await popup_page.keyboard.press(SELECT_ALL_KEY)
             await popup_page.keyboard.press("Backspace")
             await popup_page.keyboard.type(
                 entry.customer_name, delay=TIMING["type_delay"]
@@ -429,28 +433,33 @@ async def reliable_save(target_page, label: str = "記錄", timeout: int = 15000
             await target_page.click("body", timeout=2000)
         except Exception:
             pass
-        await target_page.keyboard.press("Control+s")
-        logger.info(f"  ✅ 已執行 Ctrl+S ({label})")
+        await target_page.keyboard.press(SAVE_KEY)
+        logger.info(f"  ✅ 已執行儲存快捷鍵 ({label})")
 
     # 等待儲存完成
     await target_page.wait_for_timeout(TIMING['after_save'] + 1500)
 
 
 def resolve_runtime_settings(settings: dict | None = None) -> dict:
-    """Resolve automation settings, letting explicit app settings override .env."""
-    _load_dotenv_for_source_runtime()
+    """Resolve automation settings, letting explicit app settings override saved settings and .env."""
+    from settings_store import get_effective_settings
+    effective = get_effective_settings()
     settings = settings or {}
+
     headless_value = settings.get("headless")
     if headless_value is None:
-        headless = os.getenv("HEADLESS", "false").lower() == "true"
+        headless = effective.get("headless", False)
     else:
         headless = bool(headless_value)
 
+    username = settings.get("crm_username") or effective.get("crm_username") or None
+    password = settings.get("crm_password") or effective.get("crm_password") or None
+    base_url = settings.get("crm_base_url") or effective.get("crm_base_url")
+
     return {
-        "username": settings.get("crm_username") or os.getenv("CRM_USERNAME"),
-        "password": settings.get("crm_password") or os.getenv("CRM_PASSWORD"),
-        "base_url": settings.get("crm_base_url")
-        or os.getenv("CRM_BASE_URL", "https://crm.synmosa.com.tw/SYNCRM/main.aspx#187829805/"),
+        "username": username,
+        "password": password,
+        "base_url": base_url,
         "headless": headless,
     }
 
@@ -472,10 +481,17 @@ MORNING_VISITS = 5   # 上午拜訪人數
 AFTERNOON_VISITS = 5  # 下午拜訪人數
 
 
-async def login(page, base_url):
+async def login(page, base_url, username: str = None):
     """登入 CRM"""
     logger.info("登入 CRM...")
-    await page.goto(base_url, wait_until="domcontentloaded", timeout=60000)
+    response = await page.goto(base_url, wait_until="domcontentloaded", timeout=60000)
+    if response and response.status in (401, 403):
+        user_hint = f"（目前設定帳號為: {username}）" if username else ""
+        raise Exception(f"CRM 登入認證失敗 (HTTP 401 Unauthorized) {user_hint}。請至「⚙️ 設定」修改為您真正的 CRM 帳號與密碼。")
+    content = await page.content()
+    if "401.1" in content or "Access is denied" in content or "Unauthorized: Access is denied" in content:
+        user_hint = f"（目前設定帳號為: {username}）" if username else ""
+        raise Exception(f"CRM 登入失敗 (HTTP Error 401.1 - Unauthorized: Access is denied) {user_hint}。請至「⚙️ 設定」輸入您真正的 CRM 帳號與密碼（若為網域帳號請嘗試加上 SYN\\帳號）。")
     logger.info("✅ 登入成功")
 
 
@@ -505,7 +521,7 @@ async def create_daily_report(page, base_url, run_date: str = None):
     if run_date:
         target_date = run_date.replace('-', '/')
         logger.info(f"填寫自訂日期: {target_date}")
-        await page.keyboard.press("Control+a")
+        await page.keyboard.press(SELECT_ALL_KEY)
         await page.keyboard.press("Backspace")
         await page.wait_for_timeout(200)
         await page.keyboard.insert_text(target_date)
@@ -829,7 +845,7 @@ async def _attempt_add_product(popup_page, popup_frame, context, product_code: s
             if attempt > 0:
                 logger.warning(f"      ⚠️ 等待下拉選單超時，重新輸入產品 (第 {attempt} 次重試)...")
                 await prod_input.click()
-                await product_popup.keyboard.press("Control+A")
+                await product_popup.keyboard.press(SELECT_ALL_KEY)
                 await product_popup.keyboard.press("Backspace")
                 await product_popup.wait_for_timeout(500)
 
@@ -1270,7 +1286,7 @@ async def run_automation(
         try:
             # Step 1: 登入
             _report("login")
-            await login(page, base_url)
+            await login(page, base_url, username=username)
 
             # Step 2: 新增日報
             _report("daily_report")

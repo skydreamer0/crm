@@ -1,7 +1,21 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+
+@pytest.fixture(autouse=True)
+def isolated_settings(monkeypatch, tmp_path):
+    monkeypatch.setenv("CRM_AUTOMATION_CONFIG_DIR", str(tmp_path))
+    for name in (
+        "CRM_BASE_URL",
+        "CRM_USERNAME",
+        "CRM_PASSWORD",
+        "HEADLESS",
+    ):
+        monkeypatch.delenv(name, raising=False)
 
 
 def test_resolve_runtime_settings_prefers_explicit_settings(monkeypatch):

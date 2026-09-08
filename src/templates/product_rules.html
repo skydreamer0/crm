@@ -1015,8 +1015,16 @@
                     fetch("/api/product-config"),
                     fetch("/api/settings"),
                 ]);
-                config = await configRes.json();
-                const settings = await settingsRes.json();
+                const [configText, settingsText] = await Promise.all([
+                    configRes.text(),
+                    settingsRes.text(),
+                ]);
+                try { config = JSON.parse(configText); } catch { config = {}; }
+                let settings = {};
+                try { settings = JSON.parse(settingsText); } catch { settings = {}; }
+                if (!configRes.ok || !settingsRes.ok) {
+                    throw new Error("伺服器載入資料錯誤");
+                }
                 hospitals = settings.hospital_product_rules || {};
                 dirty = false;
                 ensureSelection();
@@ -1033,7 +1041,9 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ hospital_product_rules: prunedRules() }),
                 });
-                const data = await res.json();
+                const text = await res.text();
+                let data;
+                try { data = JSON.parse(text); } catch { data = { message: `伺服器回應錯誤 (${res.status})` }; }
                 if (!res.ok) throw new Error(data.message || "儲存失敗");
                 hospitals = data.hospital_product_rules || {};
                 dirty = false;
