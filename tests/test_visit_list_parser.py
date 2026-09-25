@@ -351,3 +351,10 @@ class TestEdgeCases:
         e = parse_single_entry("馬偕/家醫/王小明/A")
         assert e.department_code == "FM"
         assert e.matched_products == ["uri", "oxb"]
+
+
+def test_hpk_list_skips_full_format_header_row():
+    from visit_list_parser import parse_hpk_customer_list
+
+    entries = parse_hpk_customer_list("醫院\t科別\t客戶\n輔英\t神經內科\t黃炳生")
+    assert [entry.customer_name for entry in entries] == ["黃炳生"]

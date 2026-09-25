@@ -386,6 +386,11 @@
                     <span class="field-hint" id="passwordHint"></span>
                 </div>
                 <div class="settings-field settings-field--wide">
+                    <label for="settingsOwnerName">我的姓名（CRM 負責業務）</label>
+                    <input type="text" id="settingsOwnerName" placeholder="例如：巫裕坤">
+                    <span class="field-hint">同名客戶有多筆時，優先選負責業務是你的那一筆</span>
+                </div>
+                <div class="settings-field settings-field--wide">
                     <label for="settingsBusinessUnit">業務單位模式</label>
                     <select id="settingsBusinessUnit">
                         <option value="H1">H1 — 一般醫院業務（包含產品矩陣）</option>
@@ -437,6 +442,7 @@
 
                 document.getElementById('settingsBaseUrl').value = data.crm_base_url || '';
                 document.getElementById('settingsUsername').value = data.crm_username || '';
+                document.getElementById('settingsOwnerName').value = data.owner_name || '';
                 document.getElementById('settingsPassword').value = '';
                 document.getElementById('settingsHeadless').checked = !!data.headless;
                 document.getElementById('settingsBusinessUnit').value = data.business_unit || 'H1';
@@ -452,6 +458,7 @@
             const payload = {
                 crm_base_url: document.getElementById('settingsBaseUrl').value.trim(),
                 crm_username: document.getElementById('settingsUsername').value.trim(),
+                owner_name: document.getElementById('settingsOwnerName').value.trim(),
                 crm_password: document.getElementById('settingsPassword').value,
                 headless: document.getElementById('settingsHeadless').checked,
                 business_unit: document.getElementById('settingsBusinessUnit').value,

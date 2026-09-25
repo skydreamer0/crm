@@ -46,6 +46,7 @@ def load_saved_settings() -> dict[str, Any]:
         "crm_base_url": _as_text(data.get("crm_base_url")),
         "crm_username": _as_text(data.get("crm_username")),
         "crm_password": _decode_secret(data.get("crm_password")),
+        "owner_name": _as_text(data.get("owner_name")),
         "headless": _as_bool(data.get("headless"), default=None) if "headless" in data else None,
         "business_unit": _sanitize_business_unit(data.get("business_unit")),
         "hospital_product_rules": _sanitize_hospital_product_rules(
@@ -71,6 +72,7 @@ def save_settings(payload: dict[str, Any]) -> dict[str, Any]:
     raw = {
         "crm_base_url": _field("crm_base_url"),
         "crm_username": _field("crm_username"),
+        "owner_name": _field("owner_name"),
         "headless": _as_bool(
             payload.get("headless") if "headless" in payload else existing_raw.get("headless"),
             default=False,
@@ -127,6 +129,7 @@ def get_effective_settings() -> dict[str, Any]:
         "crm_base_url": saved["crm_base_url"] or os.getenv("CRM_BASE_URL", DEFAULT_CRM_BASE_URL),
         "crm_username": saved["crm_username"] or os.getenv("CRM_USERNAME", ""),
         "crm_password": saved["crm_password"] or os.getenv("CRM_PASSWORD", ""),
+        "owner_name": saved["owner_name"] or _as_text(os.getenv("CRM_OWNER_NAME")),
         "headless": headless,
         "business_unit": saved["business_unit"],
         "hospital_product_rules": saved["hospital_product_rules"],
@@ -143,6 +146,7 @@ def get_public_settings() -> dict[str, Any]:
         "crm_base_url": saved["crm_base_url"] or _as_text(os.getenv("CRM_BASE_URL", DEFAULT_CRM_BASE_URL)),
         "crm_username": saved["crm_username"] or _as_text(os.getenv("CRM_USERNAME")),
         "crm_password": "",
+        "owner_name": effective["owner_name"],
         "headless": effective["headless"],
         "business_unit": effective["business_unit"],
         "hospital_product_rules": saved["hospital_product_rules"],
@@ -164,6 +168,7 @@ def _empty_settings() -> dict[str, Any]:
         "crm_base_url": "",
         "crm_username": "",
         "crm_password": "",
+        "owner_name": "",
         "headless": None,
         "business_unit": DEFAULT_BUSINESS_UNIT,
         "hospital_product_rules": {},

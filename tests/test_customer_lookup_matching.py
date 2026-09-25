@@ -65,3 +65,25 @@ def test_choose_customer_candidate_rejects_wrong_hospital():
     entry = _entry()
     with pytest.raises(ValueError, match="找不到符合客戶"):
         choose_customer_candidate(["吳書雨_HIN999999A_新光_泌尿外科"], entry)
+
+
+def test_choose_customer_candidate_prefers_configured_owner_on_tie():
+    entry = _entry(customer_name="蔡錫坤", hospital_name="", department_code="OTHER",
+                   department_name_zh="其他", owner_name="蕭兆軒")
+    candidates = [
+        "蔡錫坤_HHS928001Z_輔英科技大學附設醫院\n蔡錫坤_HHS928001Z_輔英科技大學附...巫裕坤Edarbi",
+        "蔡錫坤_HHS928001_輔英科技大學附設醫院\n蔡錫坤_HHS928001_輔英科技大學附...蕭兆軒基藥",
+    ]
+    assert choose_customer_candidate(candidates, entry) == 1
+
+
+def test_choose_customer_candidate_still_rejects_tie_without_owner_match():
+    entry = _entry(customer_name="蔡錫坤", hospital_name="", owner_name="王大明")
+    with pytest.raises(ValueError, match="多筆相同候選"):
+        choose_customer_candidate(["蔡錫坤_A\n巫裕坤", "蔡錫坤_B\n蕭兆軒"], entry)
+
+
+def test_owner_match_ignores_owner_name_inside_customer_name():
+    entry = _entry(customer_name="王明輝", hospital_name="", owner_name="王明")
+    with pytest.raises(ValueError, match="多筆相同候選"):
+        choose_customer_candidate(["王明輝_A\n巫裕坤", "王明輝_B\n蕭兆軒"], entry)

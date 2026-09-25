@@ -128,6 +128,8 @@ class VisitEntry:
     hospital_name: str = ""
     # True when matched_products comes from a hospital+department locked rule
     products_locked: bool = False
+    # CRM 負責業務姓名；同名客戶多筆時用來決勝
+    owner_name: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -315,6 +317,9 @@ def parse_visit_list(text: str, extra_hospitals: Optional[set[str]] = None) -> l
     return entries
 
 
+HPK_HEADER_WORDS = {"客戶", "姓名", "客戶姓名"}
+
+
 def parse_hpk_customer_list(text: str) -> list[VisitEntry]:
     """Parse an HPK customer-only list, including pasted Markdown table rows."""
     entries: list[VisitEntry] = []
@@ -329,7 +334,7 @@ def parse_hpk_customer_list(text: str) -> list[VisitEntry]:
                 continue
             line = cells[0]
 
-        if re.fullmatch(r":?-{3,}:?", line) or line in {"客戶", "姓名", "客戶姓名"}:
+        if re.fullmatch(r":?-{3,}:?", line) or line in HPK_HEADER_WORDS:
             continue
 
         line = re.sub(r"^(?:[-*•]|\d+[.)、])\s*", "", line).strip()
@@ -367,6 +372,8 @@ def parse_hpk_customer_list(text: str) -> list[VisitEntry]:
                 matched_products=[],
                 raw_line=line,
             )
+        if entry.customer_name in HPK_HEADER_WORDS:
+            continue
         entries.append(entry)
 
     logger.info("HPK 共解析 %d 筆客戶名單", len(entries))

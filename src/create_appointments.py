@@ -186,22 +186,49 @@ def choose_customer_candidate(candidate_texts: list[str], entry: VisitEntry) -> 
 
     best_score = max(score for score, _ in ranked)
     best = [index for score, index in ranked if score == best_score]
-    if len(best) != 1:
-        # Dynamics 偶爾會回傳兩筆顯示內容完全相同的重複資料；
-        # 對使用者而言身分資訊一致，可安全選第一筆。
-        identities = {
-            _normalise_customer_lookup_text(
-                next(
-                    (line for line in candidate_texts[index].splitlines() if line.strip()),
-                    candidate_texts[index],
-                )
+    if len(best) == 1:
+        return best[0]
+
+    # 同區多位業務共用客戶時，CRM 會列出同名同院的多筆；以負責業務姓名決勝。
+    owned = [index for index in best if _candidate_owned_by(candidate_texts[index], entry)]
+    if len(owned) == 1:
+        return owned[0]
+    if owned:
+        best = owned
+
+    # Dynamics 偶爾會回傳兩筆顯示內容完全相同的重複資料；
+    # 對使用者而言身分資訊一致，可安全選第一筆。
+    identities = {
+        _normalise_customer_lookup_text(
+            next(
+                (line for line in candidate_texts[index].splitlines() if line.strip()),
+                candidate_texts[index],
             )
-            for index in best
-        }
-        if len(identities) == 1:
-            return best[0]
-        raise ValueError(f"客戶「{entry.customer_name}」有多筆相同候選，無法安全判定")
-    return best[0]
+        )
+        for index in best
+    }
+    if len(identities) == 1:
+        return best[0]
+
+    listing = "；".join(
+        " ".join(candidate_texts[index].split()) for index in best
+    )
+    hint = "" if entry.owner_name else "（可在設定頁填寫「我的姓名」協助判斷）"
+    raise ValueError(
+        f"客戶「{entry.customer_name}」有多筆相同候選，無法安全判定{hint}: {listing}"
+    )
+
+
+def _candidate_owned_by(candidate_text: str, entry: VisitEntry) -> bool:
+    """Return True when the candidate lists the configured sales rep as owner."""
+    owner = _normalise_customer_lookup_text(entry.owner_name)
+    if not owner:
+        return False
+    # 先移除客戶姓名，避免業務姓名剛好是客戶姓名的一部分而誤判。
+    haystack = _normalise_customer_lookup_text(candidate_text).replace(
+        _normalise_customer_lookup_text(entry.customer_name), ""
+    )
+    return owner in haystack
 
 
 async def _resolved_customer_text(frame, entry: VisitEntry) -> str | None:
@@ -455,12 +482,14 @@ def resolve_runtime_settings(settings: dict | None = None) -> dict:
     username = settings.get("crm_username") or effective.get("crm_username") or None
     password = settings.get("crm_password") or effective.get("crm_password") or None
     base_url = settings.get("crm_base_url") or effective.get("crm_base_url")
+    owner_name = settings.get("owner_name") or effective.get("owner_name") or ""
 
     return {
         "username": username,
         "password": password,
         "base_url": base_url,
         "headless": headless,
+        "owner_name": owner_name,
     }
 
 
@@ -1259,6 +1288,9 @@ async def run_automation(
     password = runtime_settings["password"]
     base_url = runtime_settings["base_url"]
     headless = runtime_settings["headless"]
+    for entry in entries:
+        if not entry.owner_name:
+            entry.owner_name = runtime_settings["owner_name"]
 
     total = len(entries)
     run_history = {
