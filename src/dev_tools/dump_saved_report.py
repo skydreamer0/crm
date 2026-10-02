@@ -35,7 +35,7 @@ async def analyze_report():
                     logger.info("等待頁面載入 8 秒...")
                     await page.wait_for_timeout(8000)
                     
-                    os.makedirs("docs/html_dumps", exist_ok=True)
+                    os.makedirs("docs/research/html_dumps", exist_ok=True)
                     
                     # 遞迴抓取所有 frame
                     def get_all_frames(frame):
@@ -50,7 +50,7 @@ async def analyze_report():
                     for i, f in enumerate(all_frames):
                         try:
                             html_content = await f.content()
-                            file_path = f"docs/html_dumps/saved_report_frame_{i}.html"
+                            file_path = f"docs/research/html_dumps/saved_report_frame_{i}.html"
                             with open(file_path, "w", encoding="utf-8") as file:
                                 file.write(html_content)
                             logger.info(f"✅ 已儲存 frame {i} 至 {file_path}")

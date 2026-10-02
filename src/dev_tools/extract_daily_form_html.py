@@ -29,17 +29,17 @@ async def extract_daily_form_html():
             iframe_element = await page.wait_for_selector("iframe#contentIFrame0", timeout=10000)
             frame = await iframe_element.content_frame()
             
-            os.makedirs("docs/html_dumps", exist_ok=True)
+            os.makedirs("docs/research/html_dumps", exist_ok=True)
             
             if frame:
                 content = await frame.content()
-                with open("docs/html_dumps/new_daily_report_form.html", "w", encoding="utf-8") as f:
+                with open("docs/research/html_dumps/new_daily_report_form.html", "w", encoding="utf-8") as f:
                     f.write(content)
                 print("載入成功，已儲存 new_daily_report_form.html")
             else:
                 print("找不到 iframe，儲存目前頁面 HTML...")
                 content = await page.content()
-                with open("docs/html_dumps/new_daily_report_form_fallback.html", "w", encoding="utf-8") as f:
+                with open("docs/research/html_dumps/new_daily_report_form_fallback.html", "w", encoding="utf-8") as f:
                     f.write(content)
 
         except Exception as e:

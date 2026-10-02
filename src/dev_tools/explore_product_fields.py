@@ -24,7 +24,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-OUTPUT_DIR = "docs/product_fields"
+OUTPUT_DIR = "docs/research/product_fields"
 
 # 要搜尋的關鍵字
 PRODUCT_KEYWORDS = [

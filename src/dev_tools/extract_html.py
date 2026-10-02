@@ -26,11 +26,11 @@ async def extract_crm_html():
             await page.wait_for_timeout(3000)
             
             # 建立資料夾
-            os.makedirs("docs/html_dumps", exist_ok=True)
+            os.makedirs("docs/research/html_dumps", exist_ok=True)
             
             # 儲存首頁 HTML
             content = await page.content()
-            with open("docs/html_dumps/home.html", "w", encoding="utf-8") as f:
+            with open("docs/research/html_dumps/home.html", "w", encoding="utf-8") as f:
                 f.write(content)
             print("首頁 HTML 已儲存")
 
