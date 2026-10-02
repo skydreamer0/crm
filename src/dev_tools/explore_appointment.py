@@ -127,14 +127,14 @@ async def explore_appointment_form():
         logger.info("✅ 已截圖 popup 視窗")
         
         # Dump popup 頁面的所有 frames
-        os.makedirs("docs/html_dumps", exist_ok=True)
+        os.makedirs("docs/research/html_dumps", exist_ok=True)
         popup_frames = get_all_frames(popup_page.main_frame)
         logger.info(f"Popup 中有 {len(popup_frames)} 個 frames")
         
         for i, f in enumerate(popup_frames):
             try:
                 html = await f.content()
-                path = f"docs/html_dumps/popup_appointment_frame_{i}.html"
+                path = f"docs/research/html_dumps/popup_appointment_frame_{i}.html"
                 with open(path, "w", encoding="utf-8") as file:
                     file.write(html)
                 size_kb = len(html) / 1024

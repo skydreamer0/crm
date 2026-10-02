@@ -93,6 +93,8 @@ crm/
 │
 ├── tests/                  # 測試腳本
 ├── docs/                   # 文件與設定說明
+│   ├── plans/              # 設計與實作計畫
+│   └── research/           # dev_tools 擷取的 CRM 頁面 DOM 快照 (除錯參考)
 └── logs/                   # 執行日誌與截圖 (不進版控)
 ```
 

@@ -17,7 +17,7 @@ from create_appointments import TIMING, load_selectors, close_popup_quietly
 
 
 def test_product_selectors_include_initialized_ready_signal():
-    # 真實 DOM (docs/product_fields/product_popup_frame_1.html:4394):
+    # 真實 DOM (docs/research/product_fields/product_popup_frame_1.html:4394):
     # div#new_product 在 CRM JS 綁定完行為後才會帶 data-initialized="true"
     sel = load_selectors()
     assert sel["product"]["product_ready"] == "div#new_product[data-initialized='true']"

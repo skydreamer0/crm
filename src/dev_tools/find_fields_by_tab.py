@@ -58,7 +58,7 @@ async def find_fields_by_tab():
                 }''')
                 
                 # 將結果寫入檔案以避免 terminal 截斷
-                with open("docs/tab_results.txt", "a", encoding="utf-8") as f:
+                with open("docs/research/tab_results.txt", "a", encoding="utf-8") as f:
                     f.write(f"\\n--- Tab {i+1} ---\\n{active_element_html}\\n")
                 
                 print(f"Tab {i+1} 記錄完成")
