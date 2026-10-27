@@ -69,6 +69,34 @@
 
 ---
 
+## ⏰ 每日排程: 從週行程自動執行 (HPK)
+
+`run_today.bat` 會從週行程 Excel (`Weekly plan_*.xlsx`) 取出當天上午 + 下午名單，以 HPK 模式建立約會。
+
+1. 在 `.env` 加上週行程資料夾: `WEEKLY_PLAN_DIR=E:\路徑\到\週行程資料夾`
+   (資料夾內優先使用最新的工作版，檔名含 `out` 的匯出版排在後面)
+2. 先用 dry-run 確認抓到的名單 (不連 CRM):
+   ```bash
+   run_today.bat --dry-run --date 2026-10-27
+   ```
+3. 註冊每天 20:30 的工作排程 (僅登入時執行，錯過會在開機後補跑):
+   ```bash
+   powershell -ExecutionPolicy Bypass -File scripts\register_task.ps1
+   ```
+   移除排程: 加上 `-Unregister`；改時間: `-Time 21:00`。
+
+行為說明:
+- 預設寫入前在 CMD 列出名單並詢問「送出? [Y/n]」(Enter 或 y 送出，10 分鐘未回應不送)；`--auto` 不詢問直接送。
+- 結束後在 CMD 印出完成 / 產品警告 / 失敗明細與紀錄路徑，視窗停留到按 Enter (最多 2 小時)。
+- 假日 / 會議 / 例假日 / 颱風假，或當天沒有名單 → 不執行。
+- 非 `醫院/科別/客戶/等級` 四段格式的格子不送，列在 log 與確認名單中。
+- 當天已有跑到日報步驟的執行紀錄就不重送 (避免重複建約會)；確認後可用 `--force` 重跑。
+- 18:00 前執行且未指定 `--date` 視為補跑前一天；連續多天未跑需手動 `--date`。
+- Log: `logs/scheduled/run_YYYYMMDD.log`，執行紀錄: `logs/history/`。
+- Exit code: 0 完成或無需執行、1 錯誤、2 有未完成筆數、3 取消或逾時。
+
+---
+
 ## 📂 專案結構
 
 ```text

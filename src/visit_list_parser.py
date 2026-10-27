@@ -130,6 +130,8 @@ class VisitEntry:
     products_locked: bool = False
     # CRM 負責業務姓名；同名客戶多筆時用來決勝
     owner_name: str = ""
+    # 週行程指定的時段 (上午/下午)；空字串時由 run_automation 依前後半自動分配
+    visit_period: str = ""
 
 
 # ---------------------------------------------------------------------------
