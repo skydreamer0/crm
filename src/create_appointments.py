@@ -620,6 +620,21 @@ async def find_add_activity_button(page):
 # =========================================================================
 #  fill_appointment — 還原為原始可運作版本 (不包含 context / 不包含產品選取)
 # =========================================================================
+async def wait_for_popup_form_iframe(popup_page, timeout: int = 15000, retry_timeout: int = 20000):
+    """
+    等待約會 popup 的表單 iframe；CRM 晚上偶爾 15 秒內載不出來，重新載入 popup 再等一次。
+
+    此時尚未填寫或儲存任何欄位，重新載入不會留下記錄。
+    """
+    selector = SEL['common']['content_iframe']
+    try:
+        return await popup_page.wait_for_selector(selector, timeout=timeout)
+    except Exception as e:
+        logger.warning(f"  ⚠️ 約會表單 iframe {timeout}ms 內未載入，重新載入 popup 再試一次: {e}")
+    await popup_page.reload(wait_until="domcontentloaded")
+    return await popup_page.wait_for_selector(selector, timeout=retry_timeout)
+
+
 async def fill_appointment(popup_page, period: str, entry: VisitEntry = None, state: dict | None = None):
     """
     在約會記錄 popup 視窗中填寫基本表單。
@@ -645,9 +660,7 @@ async def fill_appointment(popup_page, period: str, entry: VisitEntry = None, st
     await popup_page.wait_for_timeout(TIMING['popup_ready'])
 
     # 取得 popup 內的表單 iframe (contentIFrame0)
-    popup_iframe_element = await popup_page.wait_for_selector(
-        SEL['common']['content_iframe'], timeout=15000
-    )
+    popup_iframe_element = await wait_for_popup_form_iframe(popup_page)
     popup_frame = await popup_iframe_element.content_frame()
     if not popup_frame:
         raise Exception("無法取得 popup 表單 iframe")

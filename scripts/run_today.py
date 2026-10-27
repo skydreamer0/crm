@@ -7,8 +7,8 @@
      (預設今天；18:00 前執行視為補跑前一天，對應排程錯過後隔天開機補跑)
   2. 取出當天上午 + 下午名單，以 HPK 模式解析 (同 /api/execute 的 HPK 路徑)
   3. 防重複: 當天已有跑到日報步驟的執行紀錄就不再送 (除非 --force)
-  4. 寫入前跳 Windows 對話框確認 (10 分鐘無回應視為取消)；--auto 則直接送
-  5. 執行 run_automation，結束跳摘要對話框，log 寫到 logs/scheduled/run_YYYYMMDD.log
+  4. 寫入前在 CMD 列出名單詢問「送出? [Y/n]」(10 分鐘無回應視為取消)；--auto 則直接送
+  5. 執行 run_automation，結束在 CMD 印摘要並停留等待按 Enter，log 寫到 logs/scheduled/run_YYYYMMDD.log
 
 週行程資料夾: --plan-dir 或 .env 的 WEEKLY_PLAN_DIR；也可用 --plan-file 指定單一檔案。
 
@@ -23,6 +23,7 @@ import logging
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -43,17 +44,11 @@ HISTORY_DIR = PROJECT_ROOT / "logs" / "history"
 SCHEDULED_LOG_DIR = PROJECT_ROOT / "logs" / "scheduled"
 # 未指定 --date 時，在此時間前執行視為補跑前一天 (例如 20:30 錯過、隔天早上開機)
 CATCH_UP_CUTOFF = datetime.time(18, 0)
-CONFIRM_TIMEOUT_MS = 10 * 60 * 1000
-SUMMARY_TIMEOUT_MS = 2 * 60 * 60 * 1000
-DIALOG_TITLE = "CRM 週行程自動執行"
+CONFIRM_TIMEOUT_S = 10 * 60
+# 結束後 CMD 視窗停留等待按 Enter 的上限 (排程執行時讓使用者看得到結果)
+HOLD_TIMEOUT_S = 2 * 60 * 60
 
 EXIT_OK, EXIT_ERROR, EXIT_INCOMPLETE, EXIT_CANCELLED = 0, 1, 2, 3
-
-# MessageBox 旗標與回傳值
-MB_OK, MB_OKCANCEL = 0x0, 0x1
-MB_ICONERROR, MB_ICONQUESTION, MB_ICONWARNING, MB_ICONINFORMATION = 0x10, 0x20, 0x30, 0x40
-MB_SETFOREGROUND, MB_TOPMOST = 0x10000, 0x40000
-IDOK = 1
 
 
 def parse_args(argv=None):
@@ -64,7 +59,7 @@ def parse_args(argv=None):
     parser.add_argument("--dry-run", action="store_true", help="只解析並列出名單，不連 CRM")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--confirm", dest="confirm", action="store_true", default=True,
-                      help="寫入前跳對話框確認 (預設)")
+                      help="寫入前在 CMD 詢問確認 (預設)")
     mode.add_argument("--auto", dest="confirm", action="store_false", help="不確認直接送出")
     parser.add_argument("--force", action="store_true", help="略過當天已執行過的防重複檢查")
     return parser.parse_args(argv)
@@ -102,15 +97,54 @@ def setup_logging(run_date: datetime.date) -> Path:
     return log_path
 
 
-def message_box(text: str, flags: int, timeout_ms: int) -> int:
-    """Show a topmost Windows MessageBox; returns the button id (32000 on timeout, 0 off Windows)."""
+def read_line(prompt: str, timeout_s: float, stdin=None) -> str | None:
+    """
+    Read one console line; None on timeout or when there is no interactive console.
+
+    Windows 用 msvcrt 輪詢鍵盤以支援逾時；其他平台直接讀一行 (無逾時)。
+    """
+    stdin = stdin or sys.stdin
+    print(prompt, end="", flush=True)
+    if stdin is None or not stdin.isatty():
+        print()
+        return None
     if sys.platform != "win32":
-        return 0
-    import ctypes
-    user32 = ctypes.windll.user32
-    return user32.MessageBoxTimeoutW(
-        None, text, DIALOG_TITLE, flags | MB_TOPMOST | MB_SETFOREGROUND, 0, timeout_ms
-    )
+        return stdin.readline().rstrip("\r\n")
+
+    import msvcrt
+    deadline = time.monotonic() + timeout_s
+    buffer = ""
+    while time.monotonic() < deadline:
+        if not msvcrt.kbhit():
+            time.sleep(0.05)
+            continue
+        ch = msvcrt.getwch()
+        if ch in ("\r", "\n"):
+            print()
+            return buffer
+        if ch == "\x03":
+            raise KeyboardInterrupt
+        if ch == "\b":
+            if buffer:
+                buffer = buffer[:-1]
+                print("\b \b", end="", flush=True)
+            continue
+        buffer += ch
+        print(ch, end="", flush=True)
+    print()
+    return None
+
+
+def ask_send(timeout_s: float = CONFIRM_TIMEOUT_S, reader=read_line) -> bool:
+    """「送出? [Y/n]」: Enter 或 y 送出；n、其他輸入、逾時或非互動視窗都不送。"""
+    minutes = int(timeout_s // 60)
+    answer = reader(f"送出到公司 CRM? [Y/n] ({minutes} 分鐘未回應不送): ", timeout_s)
+    return answer is not None and answer.strip().lower() in ("", "y", "yes")
+
+
+def hold_window(timeout_s: float = HOLD_TIMEOUT_S, reader=read_line) -> None:
+    """Keep the CMD window open so a scheduled run's result stays visible."""
+    reader("按 Enter 關閉視窗...", timeout_s)
 
 
 def history_date(record: dict) -> str:
@@ -186,21 +220,27 @@ def describe_plan(plan, entries) -> str:
     return "\n".join(lines)
 
 
-def summarize(summary: dict, history_files: list[Path]) -> tuple[str, int, int]:
-    """Return (message, icon flag, exit code) for the finished run."""
+def summarize(summary: dict, history_files: list[Path]) -> tuple[str, int]:
+    """Return (message, exit code) for the finished run."""
     complete = summary.get("complete", [])
     warnings = summary.get("product_warnings", [])
     failed = summary.get("failed", [])
     lines = [
         f"預計 {summary.get('total', 0)} 筆：完成 {len(complete)}、選填產品警告 {len(warnings)}、失敗 {len(failed)}",
     ]
+    for item in complete:
+        lines.append(f"✅ {item.get('name')}")
+    for item in warnings:
+        missing = ", ".join(item.get("missing") or []) or item.get("note", "")
+        lines.append(f"🟡 {item.get('name')} — 產品缺漏: {missing}")
+        if item.get("screenshot"):
+            lines.append(f"   截圖: {item['screenshot']}")
     for item in failed:
         orphan = " [約會可能已存入 CRM，請檢查]" if item.get("orphan") else ""
-        lines.append(f"❌ {item.get('name')} — {str(item.get('error', ''))[:60]}{orphan}")
-    if failed:
-        lines.extend(f"紀錄: {p}" for p in history_files)
-        return "\n".join(lines), MB_ICONWARNING, EXIT_INCOMPLETE
-    return "\n".join(lines), MB_ICONINFORMATION, EXIT_OK
+        error = str(item.get("error") or "").splitlines()
+        lines.append(f"❌ {item.get('name')} — {error[0][:80] if error else ''}{orphan}")
+    lines.extend(f"紀錄: {p}" for p in history_files)
+    return "\n".join(lines), EXIT_INCOMPLETE if failed else EXIT_OK
 
 
 def main(argv=None) -> int:
@@ -213,7 +253,7 @@ def main(argv=None) -> int:
 
     log_path = setup_logging(run_date)
     load_dotenv(PROJECT_ROOT / ".env")
-    notify = not args.dry_run
+    interactive = not args.dry_run
     logger.info(
         "=== 週行程排程執行 %s%s%s ===",
         run_date.isoformat(),
@@ -221,11 +261,15 @@ def main(argv=None) -> int:
         " (dry-run)" if args.dry_run else "",
     )
 
+    def finish(code: int) -> int:
+        print(f"\nLog: {log_path}")
+        if interactive:
+            hold_window()
+        return code
+
     def fail(message: str) -> int:
         logger.error(message)
-        if notify:
-            message_box(f"{message}\n\nLog: {log_path}", MB_OK | MB_ICONERROR, SUMMARY_TIMEOUT_MS)
-        return EXIT_ERROR
+        return finish(EXIT_ERROR)
 
     plan_file = Path(args.plan_file) if args.plan_file else None
     plan_dir = Path(args.plan_dir or os.getenv("WEEKLY_PLAN_DIR", "")) if not plan_file else None
@@ -254,15 +298,12 @@ def main(argv=None) -> int:
 
     previous = find_previous_runs(run_date)
     if previous and not args.force:
-        names = ", ".join(p.name for p in previous)
-        logger.warning("當天已有執行紀錄，跳過以免重複建立約會: %s", names)
-        message_box(
-            f"{run_date.isoformat()} 已有執行紀錄，為避免重複建立約會本次未送出。\n"
-            f"紀錄: {names}\n確認 CRM 後如需重跑，請執行 run_today.bat --date {run_date.isoformat()} --force",
-            MB_OK | MB_ICONWARNING,
-            SUMMARY_TIMEOUT_MS,
+        logger.warning(
+            "%s 已有執行紀錄，為避免重複建立約會本次未送出: %s\n"
+            "確認 CRM 後如需重跑: run_today.bat --date %s --force",
+            run_date.isoformat(), ", ".join(p.name for p in previous), run_date.isoformat(),
         )
-        return EXIT_OK
+        return finish(EXIT_OK)
 
     from settings_store import get_effective_settings, validate_effective_settings
     settings = get_effective_settings()
@@ -271,15 +312,9 @@ def main(argv=None) -> int:
         return fail(f"請先在 CRM 設定頁完成設定: {', '.join(missing)}")
     settings["business_unit"] = "HPK"
 
-    if args.confirm:
-        answer = message_box(
-            f"即將寫入公司 CRM，按「確定」執行，「取消」不送出 (10 分鐘未回應視為取消)。\n\n{description}",
-            MB_OKCANCEL | MB_ICONQUESTION,
-            CONFIRM_TIMEOUT_MS,
-        )
-        if answer != IDOK:
-            logger.warning("使用者取消或逾時未確認 (回傳 %s)，未送出。", answer)
-            return EXIT_CANCELLED
+    if args.confirm and not ask_send():
+        logger.warning("使用者取消或逾時未確認，未送出。")
+        return EXIT_CANCELLED
 
     try:
         ensure_browser_installed()
@@ -300,10 +335,9 @@ def main(argv=None) -> int:
         return fail(f"自動化執行失敗: {e}\n" + "\n".join(details))
 
     new_files = sorted(set(HISTORY_DIR.glob("run_*.json")) - before)
-    message, icon, code = summarize(summary, new_files)
+    message, code = summarize(summary, new_files)
     logger.info("執行結果:\n%s", message)
-    message_box(f"{message}\n\nLog: {log_path}", MB_OK | icon, SUMMARY_TIMEOUT_MS)
-    return code
+    return finish(code)
 
 
 if __name__ == "__main__":

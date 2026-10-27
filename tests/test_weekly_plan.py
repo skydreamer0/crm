@@ -204,9 +204,36 @@ class TestRunToday:
         with pytest.raises(RuntimeError, match="network error"):
             run_today.ensure_browser_installed(executable=lambda: exe, run=failed)
 
+    @pytest.mark.parametrize("answer, send", [
+        ("", True), ("y", True), ("Y ", True), ("yes", True),
+        ("n", False), ("no", False), ("x", False), (None, False),
+    ])
+    def test_ask_send_defaults_to_yes_but_timeout_cancels(self, answer, send):
+        assert run_today.ask_send(reader=lambda prompt, timeout: answer) is send
+
+    def test_read_line_without_console_returns_none(self):
+        class NotATty:
+            def isatty(self):
+                return False
+        assert run_today.read_line("? ", 1, stdin=NotATty()) is None
+
+    def test_summary_lists_each_outcome(self):
+        summary = {
+            "total": 3,
+            "complete": [{"name": "王小明"}],
+            "product_warnings": [],
+            "failed": [{"name": "李小華", "error": "Timeout 15000ms exceeded.\nCall log:", "orphan": False}],
+        }
+        message, code = run_today.summarize(summary, [Path("logs/history/run_x.json")])
+        assert code == run_today.EXIT_INCOMPLETE
+        assert "✅ 王小明" in message
+        assert "❌ 李小華 — Timeout 15000ms exceeded." in message
+        assert "Call log" not in message
+        assert "紀錄: " in message
+
     def test_dry_run_never_touches_crm(self, plan_path, tmp_path, monkeypatch):
         monkeypatch.setattr(run_today, "SCHEDULED_LOG_DIR", tmp_path / "logs")
-        monkeypatch.setattr(run_today, "message_box", lambda *a, **k: pytest.fail("dialog shown"))
+        monkeypatch.setattr(run_today, "read_line", lambda *a, **k: pytest.fail("prompt shown"))
         monkeypatch.setitem(sys.modules, "create_appointments", None)  # import would fail
         root = logging.getLogger()
         handlers = list(root.handlers)
