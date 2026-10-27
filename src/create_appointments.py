@@ -1295,6 +1295,7 @@ async def run_automation(
     total = len(entries)
     run_history = {
         "start_time": datetime.datetime.now().isoformat(),
+        "run_date": run_date,
         "total_entries": total,
         "headless": headless,
         "logs": [],
@@ -1354,7 +1355,7 @@ async def run_automation(
                     "resolved_customer": None,
                 }
                 try:
-                    period = "上午" if idx <= midpoint else "下午"
+                    period = entry.visit_period or ("上午" if idx <= midpoint else "下午")
                     _report("appointment", idx, f"{entry.customer_name} ({period})")
                     fill_result = await create_single_appointment(page, context, period, idx, entry=entry, daily_report_url=daily_report_url, state=entry_state)
                     succeeded.append((entry, fill_result))
