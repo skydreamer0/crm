@@ -181,6 +181,29 @@ class TestRunToday:
         found = run_today.find_previous_runs(datetime.date(2026, 10, 27), history_dir=tmp_path)
         assert [p.name for p in found] == ["run_b.json"]
 
+    def test_browser_present_skips_install(self, tmp_path):
+        exe = tmp_path / "chrome.exe"
+        exe.write_bytes(b"")
+        run_today.ensure_browser_installed(executable=lambda: exe, run=lambda *a, **k: pytest.fail("installed"))
+
+    def test_missing_browser_is_installed_once(self, tmp_path):
+        exe = tmp_path / "chrome.exe"
+        calls = []
+
+        def fake_run(cmd, **kwargs):
+            calls.append(cmd)
+            exe.write_bytes(b"")
+            return type("Result", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+        run_today.ensure_browser_installed(executable=lambda: exe, run=fake_run)
+        assert calls == [[sys.executable, "-m", "playwright", "install", "chromium"]]
+
+    def test_failed_install_raises(self, tmp_path):
+        exe = tmp_path / "chrome.exe"
+        failed = lambda *a, **k: type("Result", (), {"returncode": 1, "stdout": "", "stderr": "network error"})()
+        with pytest.raises(RuntimeError, match="network error"):
+            run_today.ensure_browser_installed(executable=lambda: exe, run=failed)
+
     def test_dry_run_never_touches_crm(self, plan_path, tmp_path, monkeypatch):
         monkeypatch.setattr(run_today, "SCHEDULED_LOG_DIR", tmp_path / "logs")
         monkeypatch.setattr(run_today, "message_box", lambda *a, **k: pytest.fail("dialog shown"))

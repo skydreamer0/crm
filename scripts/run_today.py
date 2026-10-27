@@ -21,6 +21,7 @@ import datetime
 import json
 import logging
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -136,6 +137,30 @@ def find_previous_runs(run_date: datetime.date, history_dir: Path = HISTORY_DIR)
         if any(log.get("step") == "daily_report" for log in record.get("logs", [])):
             found.append(path)
     return found
+
+
+def chromium_executable() -> Path:
+    """Path Playwright will launch Chromium from (may not exist yet)."""
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        return Path(p.chromium.executable_path)
+
+
+def ensure_browser_installed(executable=chromium_executable, run=subprocess.run) -> None:
+    """
+    Install Playwright Chromium once when its executable is missing.
+
+    ms-playwright 快取被清掉時 launch 會失敗；先補裝再繼續，補裝失敗才報錯。
+    """
+    path = executable()
+    if path.exists():
+        return
+    logger.warning("找不到 Playwright Chromium (%s)，執行 playwright install chromium...", path)
+    result = run([sys.executable, "-m", "playwright", "install", "chromium"],
+                 capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if result.returncode != 0 or not executable().exists():
+        raise RuntimeError(f"安裝 Playwright Chromium 失敗: {(result.stderr or result.stdout).strip()[-300:]}")
+    logger.info("✅ Playwright Chromium 安裝完成")
 
 
 def build_entries(plan):
@@ -256,15 +281,23 @@ def main(argv=None) -> int:
             logger.warning("使用者取消或逾時未確認 (回傳 %s)，未送出。", answer)
             return EXIT_CANCELLED
 
+    try:
+        ensure_browser_installed()
+    except Exception as e:
+        return fail(f"瀏覽器準備失敗 (尚未連線 CRM): {e}")
+
     from create_appointments import run_automation
     before = set(HISTORY_DIR.glob("run_*.json")) if HISTORY_DIR.exists() else set()
+    started = datetime.datetime.now().timestamp()
     try:
         summary = asyncio.run(run_automation(entries, run_date=run_date.isoformat(), settings=settings))
     except Exception as e:
         new_files = sorted(set(HISTORY_DIR.glob("run_*.json")) - before)
-        details = "\n".join(f"紀錄: {p}" for p in new_files)
+        details = [f"紀錄: {p}" for p in new_files] or ["未產生執行紀錄 (尚未登入 CRM)"]
         screenshot = PROJECT_ROOT / "logs" / "screenshots" / "error.png"
-        return fail(f"自動化執行失敗: {e}\n{details}\n截圖: {screenshot}")
+        if screenshot.exists() and screenshot.stat().st_mtime >= started:
+            details.append(f"截圖: {screenshot}")
+        return fail(f"自動化執行失敗: {e}\n" + "\n".join(details))
 
     new_files = sorted(set(HISTORY_DIR.glob("run_*.json")) - before)
     message, icon, code = summarize(summary, new_files)
