@@ -7,12 +7,12 @@
      (預設今天；18:00 前執行視為補跑前一天，對應排程錯過後隔天開機補跑)
   2. 取出當天上午 + 下午名單，以 HPK 模式解析 (同 /api/execute 的 HPK 路徑)
   3. 防重複: 當天已有跑到日報步驟的執行紀錄就不再送 (除非 --force)
-  4. 寫入前在 CMD 列出名單詢問「送出? [Y/n]」(10 分鐘無回應視為取消)；--auto 則直接送
+  4. 寫入前在 CMD 列出名單詢問「送出? [Y/n]」(10 分鐘無回應自動送出，輸入 n 取消)；--auto 則不詢問直接送
   5. 執行 run_automation，結束在 CMD 印摘要並停留等待按 Enter，log 寫到 logs/scheduled/run_YYYYMMDD.log
 
 週行程資料夾: --plan-dir 或 .env 的 WEEKLY_PLAN_DIR；也可用 --plan-file 指定單一檔案。
 
-Exit code: 0 完成或當天無需執行 / 1 錯誤 / 2 有未完成筆數 / 3 使用者取消或逾時
+Exit code: 0 完成或當天無需執行 / 1 錯誤 / 2 有未完成筆數 / 3 使用者取消或沒有互動視窗
 """
 # === 標準庫 ===
 import argparse
@@ -59,7 +59,7 @@ def parse_args(argv=None):
     parser.add_argument("--dry-run", action="store_true", help="只解析並列出名單，不連 CRM")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--confirm", dest="confirm", action="store_true", default=True,
-                      help="寫入前在 CMD 詢問確認 (預設)")
+                      help="寫入前在 CMD 詢問確認，10 分鐘無回應自動送出 (預設)")
     mode.add_argument("--auto", dest="confirm", action="store_false", help="不確認直接送出")
     parser.add_argument("--force", action="store_true", help="略過當天已執行過的防重複檢查")
     return parser.parse_args(argv)
@@ -97,11 +97,16 @@ def setup_logging(run_date: datetime.date) -> Path:
     return log_path
 
 
-def read_line(prompt: str, timeout_s: float, stdin=None) -> str | None:
-    """
-    Read one console line; None on timeout or when there is no interactive console.
+TIMED_OUT = object()  # read_line 逾時的回傳值 (與「沒有互動視窗」的 None 區分)
 
-    Windows 用 msvcrt 輪詢鍵盤以支援逾時；其他平台直接讀一行 (無逾時)。
+
+def read_line(prompt: str, timeout_s: float, stdin=None, countdown: bool = False):
+    """
+    Read one console line.
+
+    回傳輸入文字；逾時回傳 TIMED_OUT；沒有互動視窗回傳 None。
+    Windows 用 msvcrt 輪詢鍵盤以支援逾時 (countdown=True 時尚未輸入前每秒更新剩餘時間)；
+    其他平台直接讀一行 (無逾時)。
     """
     stdin = stdin or sys.stdin
     print(prompt, end="", flush=True)
@@ -114,8 +119,13 @@ def read_line(prompt: str, timeout_s: float, stdin=None) -> str | None:
     import msvcrt
     deadline = time.monotonic() + timeout_s
     buffer = ""
+    shown = None
     while time.monotonic() < deadline:
         if not msvcrt.kbhit():
+            left = int(deadline - time.monotonic())
+            if countdown and not buffer and left != shown:
+                shown = left
+                print(f"\r{prompt}[剩 {left // 60:02d}:{left % 60:02d}] ", end="", flush=True)
             time.sleep(0.05)
             continue
         ch = msvcrt.getwch()
@@ -132,14 +142,33 @@ def read_line(prompt: str, timeout_s: float, stdin=None) -> str | None:
         buffer += ch
         print(ch, end="", flush=True)
     print()
-    return None
+    return TIMED_OUT
 
 
 def ask_send(timeout_s: float = CONFIRM_TIMEOUT_S, reader=read_line) -> bool:
-    """「送出? [Y/n]」: Enter 或 y 送出；n、其他輸入、逾時或非互動視窗都不送。"""
+    """
+    「送出? [Y/n]」: Enter 或 y 送出；n 取消；逾時自動送出。
+
+    沒有互動視窗 (無法取消) 時不送，需明確使用 --auto；其他輸入會重新詢問。
+    """
     minutes = int(timeout_s // 60)
-    answer = reader(f"送出到公司 CRM? [Y/n] ({minutes} 分鐘未回應不送): ", timeout_s)
-    return answer is not None and answer.strip().lower() in ("", "y", "yes")
+    prompt = f"送出到公司 CRM? [Y/n] ({minutes} 分鐘無回應將自動送出，輸入 n 取消) "
+    deadline = time.monotonic() + timeout_s
+    while True:
+        remaining = deadline - time.monotonic()
+        answer = reader(prompt, remaining, countdown=True) if remaining > 0 else TIMED_OUT
+        if answer is None:
+            logger.warning("沒有互動視窗可確認，未送出 (排程請在登入狀態執行，或使用 --auto)。")
+            return False
+        if answer is TIMED_OUT:
+            logger.info("%d 分鐘無回應，自動送出。", minutes)
+            return True
+        choice = answer.strip().lower()
+        if choice in ("", "y", "yes"):
+            return True
+        if choice in ("n", "no"):
+            return False
+        print("請輸入 y (送出) 或 n (取消)。")
 
 
 def hold_window(timeout_s: float = HOLD_TIMEOUT_S, reader=read_line) -> None:
@@ -313,7 +342,7 @@ def main(argv=None) -> int:
     settings["business_unit"] = "HPK"
 
     if args.confirm and not ask_send():
-        logger.warning("使用者取消或逾時未確認，未送出。")
+        logger.warning("已取消，未送出。")
         return EXIT_CANCELLED
 
     try:

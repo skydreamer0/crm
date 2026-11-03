@@ -206,10 +206,22 @@ class TestRunToday:
 
     @pytest.mark.parametrize("answer, send", [
         ("", True), ("y", True), ("Y ", True), ("yes", True),
-        ("n", False), ("no", False), ("x", False), (None, False),
+        ("n", False), ("no", False), ("N", False), (None, False),
     ])
-    def test_ask_send_defaults_to_yes_but_timeout_cancels(self, answer, send):
-        assert run_today.ask_send(reader=lambda prompt, timeout: answer) is send
+    def test_ask_send_answers(self, answer, send):
+        assert run_today.ask_send(reader=lambda prompt, timeout, **kw: answer) is send
+
+    def test_ask_send_timeout_sends_automatically(self):
+        assert run_today.ask_send(reader=lambda prompt, timeout, **kw: run_today.TIMED_OUT) is True
+
+    def test_ask_send_reasks_on_other_input(self):
+        answers = iter(["x", "maybe", "n"])
+        assert run_today.ask_send(reader=lambda prompt, timeout, **kw: next(answers)) is False
+
+    def test_ask_send_prompt_mentions_auto_send(self):
+        prompts = []
+        run_today.ask_send(reader=lambda prompt, timeout, **kw: prompts.append(prompt) or "y")
+        assert "自動送出" in prompts[0] and "n 取消" in prompts[0]
 
     def test_read_line_without_console_returns_none(self):
         class NotATty:
