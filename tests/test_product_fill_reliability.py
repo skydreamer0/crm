@@ -69,3 +69,45 @@ def test_close_popup_quietly_swallows_close_errors():
 def test_close_popup_quietly_accepts_none():
     # popup 尚未建立 (例外發生在 expect_page 之前) 時傳入 None 也要安全
     asyncio.run(close_popup_quietly(None))
+
+
+class FakeIframePopup:
+    """Popup 替身: 前 `failures` 次 wait_for_selector 逾時，reload 會被記錄。"""
+
+    def __init__(self, failures):
+        self.failures = failures
+        self.waits = []
+        self.reloads = 0
+
+    async def wait_for_selector(self, selector, timeout):
+        self.waits.append(timeout)
+        if len(self.waits) <= self.failures:
+            raise TimeoutError(f"Timeout {timeout}ms exceeded")
+        return "iframe"
+
+    async def reload(self, wait_until):
+        self.reloads += 1
+
+
+def test_popup_iframe_found_without_reload():
+    from create_appointments import wait_for_popup_form_iframe
+    popup = FakeIframePopup(failures=0)
+    assert asyncio.run(wait_for_popup_form_iframe(popup)) == "iframe"
+    assert popup.reloads == 0
+
+
+def test_popup_iframe_timeout_reloads_once_then_succeeds():
+    from create_appointments import wait_for_popup_form_iframe
+    popup = FakeIframePopup(failures=1)
+    assert asyncio.run(wait_for_popup_form_iframe(popup, timeout=15000, retry_timeout=20000)) == "iframe"
+    assert popup.reloads == 1
+    assert popup.waits == [15000, 20000]
+
+
+def test_popup_iframe_second_timeout_raises():
+    import pytest
+    from create_appointments import wait_for_popup_form_iframe
+    popup = FakeIframePopup(failures=2)
+    with pytest.raises(TimeoutError):
+        asyncio.run(wait_for_popup_form_iframe(popup))
+    assert popup.reloads == 1
